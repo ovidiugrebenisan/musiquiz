@@ -7,7 +7,7 @@ export default function Quiz() {
   useEffect(() => {
     const artistPicked = localStorage.getItem("artistPicked");
     if (artistPicked) setArtistData(artistPicked);
-  });
+  },[]);
   const options = api.mbdb.getArtistAlbum.useQuery(artistData);
 
   return (
@@ -16,7 +16,8 @@ export default function Quiz() {
                         text-white font-metropolis text-[27px]
                         non-italic font-black leading-normal" >
       <Link href="/">musiquiz.co</Link>  
-      </div>   
+      </div>
+      <div>Test Data: {options.data?.name}</div>   
     </div>
   );
 }
