@@ -1,20 +1,23 @@
-import { FormEvent, useState } from "react";
+import type  { FormEvent } from "react";
 import { useRouter } from "next/router";
+import { useState } from "react";
 
 export default function Search() {
   const router = useRouter();
   const [shouldRoute, setShouldRoute] = useState(false)
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const artist = (event.currentTarget.elements.namedItem('artist') as HTMLInputElement).value;
+
     localStorage.setItem(
       "artistPicked",
-      event.currentTarget.artist.value
+      artist
     );
     setShouldRoute(true)
 
   };
   if (shouldRoute) {
-  router.push("/Quiz")
+  void router.push("/Quiz")
   }
 
   return (
