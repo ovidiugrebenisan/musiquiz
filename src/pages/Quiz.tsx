@@ -14,10 +14,12 @@ export default function Quiz() {
     <div className="bg-quiz w-screen h-screen bg-cover">
       <div className="flex w-[163px] h-[26px] flex-col flex-shrink
                         text-white font-metropolis text-[27px]
-                        non-italic font-black leading-normal" >
+                        non-italic font-black leading-normal
+                        left-104 top-68" >
       <Link href="/">musiquiz.co</Link>  
       </div>
       <div>Test Data: {options.data?.name}</div>   
     </div>
   );
 }
+
