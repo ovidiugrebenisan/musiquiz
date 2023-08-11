@@ -1,30 +1,26 @@
-import type  { FormEvent } from "react";
+import {  type FormEvent } from "react";
+import { atom, useSetAtom } from 'jotai';
 import { useRouter } from "next/router";
-import { useState } from "react";
+
+export const artistAtom = atom('')
 
 export default function Search() {
   const router = useRouter();
-  const [shouldRoute, setShouldRoute] = useState(false)
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const artist = (event.currentTarget.elements.namedItem('artist') as HTMLInputElement).value;
-
-    localStorage.setItem(
-      "artistPicked",
-      artist
-    );
-    setShouldRoute(true)
-
-  };
-  if (shouldRoute) {
-  void router.push("/Quiz")
+  const setArtist = useSetAtom(artistAtom)
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const artistName = formData.get("artist") as string;
+    setArtist(artistName)
+    void router.push('/Quiz');
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="artist">Artist Name</label>
-      <input type="text" id="artist" name="artist" required></input>
-      <button type="submit"> Submit </button>
+    <form action="" method="get" onSubmit={handleSubmit}>
+      <label>Enter artist name:</label>
+      <input type="text" name="artist"></input>
+      <button>Search Artist</button>
     </form>
   );
 }
