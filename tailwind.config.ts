@@ -5,11 +5,11 @@ export default {
   theme: {
     extend: {
       backgroundImage: {
-        quiz: "url(/quiz_background.png)",
+        quiz: "url(/KillEmAll.jpg)",
       },
       fontFamily: {
         'metropolis' : ['Metropolis']
-      }
+      },
     },
   },
   plugins: [],

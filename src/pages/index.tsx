@@ -1,12 +1,10 @@
-import { api } from "~/utils/api";
+import Link from "next/link";
 
 export default function Home() {
-  const query = api.mbdb.getArtistAlbum.useQuery("Eddie Money");
 
   return (
     <div>
-      { query.data?.name }
-      { query.data?.begin_date_year}
+      <Link href="/Search">Search</Link>
 
     </div>
   );
