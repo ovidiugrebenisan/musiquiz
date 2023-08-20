@@ -2,14 +2,16 @@ import { api } from "~/utils/api";
 import Link from "next/link";
 import { useAtomValue } from "jotai/react";
 import { artistAtom } from "./Search";
-import { useEffect, useState } from "react";
 import { AnswerButton } from "~/components/AnswerButton";
 
-function getRandomNumber(lowerLimit: number, upperLimit: number): number {
+function getRandomNumber(lowerLimit: number, upperLimit: number, exception: number): number {
   const range: number = upperLimit - lowerLimit + 1;
 
-  const randomNumber: number = Math.floor(Math.random() * range) + lowerLimit;
+  let randomNumber: number = Math.floor(Math.random() * range) + lowerLimit;
 
+  if (randomNumber === exception) {
+    randomNumber = getRandomNumber(lowerLimit, upperLimit, exception)
+  }
   return randomNumber;
 }
 
@@ -32,31 +34,18 @@ function shuffle<T>(array: T[]): T[] {
 
 export default function Quiz() {
   const artistPicked = useAtomValue(artistAtom);
-  const [albumYear, setAlbumYear] = useState(0);
-  const [artistName, setArtistName] = useState("");
-  const res = api.mbdb.getArtistAlbum.useQuery(artistPicked, {
+  const albumYear = api.mbdb.getAlbumStartYear.useQuery(artistPicked, {
     staleTime: Infinity,
     retry: false,
-  });
+  }).data as number;
 
-  useEffect(() => {
-    const correct_year = res.data?.begin_date_year;
-    const artist_name = res.data?.name;
-    if (typeof correct_year === "number") {
-      setAlbumYear(correct_year);
-    }
-    if (typeof artist_name === "string") {
-      setArtistName(artist_name);
-    }
-  }, [res.data]);
-  let higher_year = 0;
-  let lower_year = 0;
-  let another_year = 0;
-  if (albumYear) {
-    higher_year = getRandomNumber(albumYear, albumYear + 5);
-    lower_year = getRandomNumber(albumYear - 5, albumYear);
-    another_year = getRandomNumber(albumYear - 10, albumYear - 5);
-  }
+
+
+
+    const higher_year = getRandomNumber(albumYear - 1, albumYear + 1, albumYear);
+    const lower_year = getRandomNumber(albumYear - 2, albumYear - 7, albumYear);
+    const another_year = getRandomNumber(albumYear + 2, albumYear + 7, albumYear);
+  
 
   const answers: number[] = [albumYear, higher_year, lower_year, another_year];
   const shuffledArray = shuffle(answers);
@@ -88,7 +77,7 @@ export default function Quiz() {
         className="absolute left-1/2 top-1/4 h-[110px] w-[1160px] -translate-x-1/2 -translate-y-1/2
                   text-center font-metropolis text-[64px] font-black leading-normal text-white"
       >
-        In which year was {artistName} founded?
+        In which year was {artistPicked} founded?
       </p>
       <div className=" absolute bottom-1/4 left-1/2 flex h-[320px] w-[800px] -translate-x-1/2 -translate-y-1/2 flex-col gap-[15px]">
         <AnswerButton answer={shuffledArray[0] as number} />

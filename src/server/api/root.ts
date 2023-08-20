@@ -1,5 +1,5 @@
 import { createTRPCRouter } from "~/server/api/trpc";
-import { getArtistAlbum } from "./routers/mbdb";
+import { getArtistData } from "./routers/mbdb";
 
 /**
  * This is the primary router for your server.
@@ -7,7 +7,7 @@ import { getArtistAlbum } from "./routers/mbdb";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  mbdb: getArtistAlbum,
+  mbdb: getArtistData,
 });
 
 // export type definition of API
