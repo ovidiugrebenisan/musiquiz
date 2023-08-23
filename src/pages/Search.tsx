@@ -31,8 +31,8 @@ export default function Search() {
     
     <Combobox>
       <form onSubmit={handleSubmit}>
-      <Combobox.Button>Search Artist</Combobox.Button>
-      <Combobox.Input onChange={(event) => setSearchedArtist(event.target.value)} />
+      <button type="submit">Search Artist</button>
+      <Combobox.Input name="artist" onChange={(event) => setSearchedArtist(event.target.value)} />
       <Combobox.Options>
         {artistlist?.map((person) => (
           <Combobox.Option key={person.name} value={person.name}>
