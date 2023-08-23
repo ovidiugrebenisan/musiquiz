@@ -91,4 +91,24 @@ export const getArtistData = createTRPCRouter({
         return coverArt;
       }
     }),
+  getAllArtists: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      const artist = await ctx.prisma.artist.findMany({
+        where: {
+          name: {
+            startsWith: input,
+          },
+        },
+        select: {
+          name: true,
+        },
+        distinct: ['name'],
+        take: 5
+      });
+      if (artist) {
+        return artist;
+      }
+      return null;
+    }),
 });

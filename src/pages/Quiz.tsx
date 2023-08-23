@@ -6,9 +6,6 @@ import { AnswerButton } from "~/components/AnswerButton";
 
 
 
-
-
-
 function getRandomNumber(
   lowerLimit: number,
   upperLimit: number,
