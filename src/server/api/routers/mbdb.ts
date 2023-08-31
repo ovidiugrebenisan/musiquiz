@@ -1,29 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import axios from "axios";
 
-export interface CoverArt {
-  images?: ImagesEntity[] | null;
-  release: string;
-}
-export interface ImagesEntity {
-  approved: boolean;
-  back: boolean;
-  comment: string;
-  edit: number;
-  front: boolean;
-  id: number;
-  image: string;
-  thumbnails: Thumbnails;
-  types?: string[] | null;
-}
-export interface Thumbnails {
-  250: string;
-  500: string;
-  1200: string;
-  large: string;
-  small: string;
-}
 
 export const getArtistData = createTRPCRouter({
   getArtistData: publicProcedure
@@ -65,19 +42,18 @@ export const getArtistData = createTRPCRouter({
         let coverArt: string | null = null;
 
         for (const release of shuffledReleases) {
-          const releaseId = release.gid;
-          const getCoverURL =
-            "https://coverartarchive.org/release/" + releaseId;
+          const releaseGid = release.gid;
+          const releaseId = release.id
 
           try {
-            const coverUrlResponse = await axios.get<CoverArt>(getCoverURL);
-            const images = coverUrlResponse.data.images;
-            if (images) {
-              const firstImageEntity = images[0];
-              if (firstImageEntity && firstImageEntity.image) {
-                coverArt = firstImageEntity.image;
-                break; // Exit the loop as we found a valid cover art
+            const coverUrlResponse = await ctx.prisma.cover_art.findFirst({
+              where: {
+                release: releaseId,
               }
+            });
+            const coverId = coverUrlResponse?.id;
+            if (coverUrlResponse && coverId) {
+            coverArt = "http://coverartarchive.org/release/" + releaseGid + "/" + coverId + "jpg"
             }
           } catch (error) {
             console.warn(

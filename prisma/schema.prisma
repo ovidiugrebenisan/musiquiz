@@ -1,11 +1,64 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch"]
+  previewFeatures = ["fullTextSearch", "multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["cover_art_archive", "musicbrainz"]
+}
+
+model art_type {
+  id          Int     @id @default(autoincrement())
+  name        String
+  parent      Int?
+  child_order Int     @default(0)
+  description String?
+  gid         String  @unique(map: "art_type_idx_gid") @db.Uuid
+
+  @@schema("cover_art_archive")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cover_art {
+  id                  BigInt   @id
+  release             Int
+  comment             String   @default("")
+  edit                Int
+  ordering            Int
+  date_uploaded       DateTime @default(now()) @db.Timestamptz(6)
+  edits_pending       Int      @default(0)
+  mime_type           String
+  filesize            Int?
+  thumb_250_filesize  Int?
+  thumb_500_filesize  Int?
+  thumb_1200_filesize Int?
+
+  @@index([release], map: "cover_art_idx_release")
+  @@schema("cover_art_archive")
+}
+
+model cover_art_type {
+  id      BigInt
+  type_id Int
+
+  @@id([id, type_id])
+  @@schema("cover_art_archive")
+}
+
+model image_type {
+  mime_type String @id
+  suffix    String
+
+  @@schema("cover_art_archive")
+}
+
+model release_group_cover_art {
+  release_group Int @id
+  release       Int
+
+  @@schema("cover_art_archive")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -16,6 +69,7 @@ model alternative_medium {
   name                String? @db.VarChar
 
   @@index([alternative_release], map: "alternative_medium_idx_alternative_release")
+  @@schema("musicbrainz")
 }
 
 model alternative_medium_track {
@@ -24,6 +78,7 @@ model alternative_medium_track {
   alternative_track  Int
 
   @@id([alternative_medium, track])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -42,6 +97,7 @@ model alternative_release {
   @@index([language, script], map: "alternative_release_idx_language_script")
   @@index([name], map: "alternative_release_idx_name")
   @@index([release], map: "alternative_release_idx_release")
+  @@schema("musicbrainz")
 }
 
 model alternative_release_type {
@@ -51,6 +107,8 @@ model alternative_release_type {
   child_order Int     @default(0)
   description String?
   gid         String  @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -62,6 +120,7 @@ model alternative_track {
 
   @@index([artist_credit], map: "alternative_track_idx_artist_credit")
   @@index([name], map: "alternative_track_idx_name")
+  @@schema("musicbrainz")
 }
 
 model annotation {
@@ -70,6 +129,8 @@ model annotation {
   text      String?
   changelog String?   @db.VarChar(255)
   created   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 model application {
@@ -81,9 +142,11 @@ model application {
   oauth_redirect_uri String?
 
   @@index([owner], map: "application_idx_owner")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model area {
   id               Int       @id @default(autoincrement())
   gid              String    @unique(map: "area_idx_gid") @db.Uuid
@@ -101,9 +164,11 @@ model area {
   comment          String    @default("") @db.VarChar(255)
 
   @@index([name], map: "area_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model area_alias {
   id                 Int       @id @default(autoincrement())
   area               Int
@@ -123,6 +188,7 @@ model area_alias {
   ended              Boolean   @default(false)
 
   @@index([area], map: "area_alias_idx_area")
+  @@schema("musicbrainz")
 }
 
 model area_alias_type {
@@ -132,6 +198,8 @@ model area_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "area_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model area_annotation {
@@ -139,6 +207,7 @@ model area_annotation {
   annotation Int
 
   @@id([area, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -150,6 +219,7 @@ model area_attribute {
   area_attribute_text               String?
 
   @@index([area], map: "area_attribute_idx_area")
+  @@schema("musicbrainz")
 }
 
 model area_attribute_type {
@@ -161,6 +231,8 @@ model area_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "area_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model area_attribute_type_allowed_value {
@@ -173,6 +245,7 @@ model area_attribute_type_allowed_value {
   gid                 String  @unique(map: "area_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([area_attribute_type], map: "area_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model area_containment {
@@ -182,6 +255,7 @@ model area_containment {
 
   @@id([descendant, parent])
   @@index([parent], map: "area_containment_idx_parent")
+  @@schema("musicbrainz")
 }
 
 model area_gid_redirect {
@@ -190,6 +264,7 @@ model area_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "area_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 model area_tag {
@@ -200,6 +275,7 @@ model area_tag {
 
   @@id([area, tag])
   @@index([tag], map: "area_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model area_tag_raw {
@@ -212,6 +288,7 @@ model area_tag_raw {
   @@index([area], map: "area_tag_raw_idx_area")
   @@index([editor], map: "area_tag_raw_idx_editor")
   @@index([tag], map: "area_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model area_type {
@@ -221,6 +298,8 @@ model area_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "area_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -252,6 +331,7 @@ model artist {
   @@index([name], map: "artist_idx_musicbrainz_collate")
   @@index([name], map: "artist_idx_name")
   @@index([sort_name], map: "artist_idx_sort_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -275,6 +355,7 @@ model artist_alias {
   ended              Boolean   @default(false)
 
   @@index([artist], map: "artist_alias_idx_artist")
+  @@schema("musicbrainz")
 }
 
 model artist_alias_type {
@@ -284,6 +365,8 @@ model artist_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "artist_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model artist_annotation {
@@ -291,6 +374,7 @@ model artist_annotation {
   annotation Int
 
   @@id([artist, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -302,6 +386,7 @@ model artist_attribute {
   artist_attribute_text               String?
 
   @@index([artist], map: "artist_attribute_idx_artist")
+  @@schema("musicbrainz")
 }
 
 model artist_attribute_type {
@@ -313,6 +398,8 @@ model artist_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "artist_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model artist_attribute_type_allowed_value {
@@ -325,9 +412,11 @@ model artist_attribute_type_allowed_value {
   gid                   String  @unique(map: "artist_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([artist_attribute_type], map: "artist_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model artist_credit {
   id            Int       @id @default(autoincrement())
   name          String    @db.VarChar
@@ -338,6 +427,7 @@ model artist_credit {
   gid           String    @unique(map: "artist_credit_idx_gid") @db.Uuid
 
   @@index([name], map: "artist_credit_idx_musicbrainz_collate")
+  @@schema("musicbrainz")
 }
 
 model artist_credit_gid_redirect {
@@ -346,8 +436,10 @@ model artist_credit_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "artist_credit_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model artist_credit_name {
   artist_credit Int
   position      Int    @db.SmallInt
@@ -358,6 +450,7 @@ model artist_credit_name {
   @@id([artist_credit, position])
   @@index([artist], map: "artist_credit_name_idx_artist")
   @@index([name], map: "artist_credit_name_idx_musicbrainz_collate")
+  @@schema("musicbrainz")
 }
 
 model artist_gid_redirect {
@@ -366,6 +459,7 @@ model artist_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "artist_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -376,6 +470,7 @@ model artist_ipi {
   created       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([artist, ipi])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -386,6 +481,7 @@ model artist_isni {
   created       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([artist, isni])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -393,6 +489,8 @@ model artist_meta {
   id           Int  @id
   rating       Int? @db.SmallInt
   rating_count Int?
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -403,6 +501,7 @@ model artist_rating_raw {
 
   @@id([artist, editor])
   @@index([editor], map: "artist_rating_raw_idx_editor")
+  @@schema("musicbrainz")
 }
 
 /// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
@@ -418,6 +517,7 @@ model artist_release {
   release            Int
 
   @@ignore
+  @@schema("musicbrainz")
 }
 
 /// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
@@ -433,6 +533,7 @@ model artist_release_group {
   release_group      Int
 
   @@ignore
+  @@schema("musicbrainz")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -441,6 +542,7 @@ model artist_release_group_pending_update {
 
   @@index([release_group], map: "artist_release_group_pending_update_idx_release_group", type: Hash)
   @@ignore
+  @@schema("musicbrainz")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -449,6 +551,7 @@ model artist_release_pending_update {
 
   @@index([release], map: "artist_release_pending_update_idx_release", type: Hash)
   @@ignore
+  @@schema("musicbrainz")
 }
 
 model artist_tag {
@@ -459,6 +562,7 @@ model artist_tag {
 
   @@id([artist, tag])
   @@index([tag], map: "artist_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model artist_tag_raw {
@@ -470,6 +574,7 @@ model artist_tag_raw {
   @@id([artist, editor, tag])
   @@index([editor], map: "artist_tag_raw_idx_editor")
   @@index([tag], map: "artist_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model artist_type {
@@ -479,6 +584,8 @@ model artist_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "artist_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -494,6 +601,8 @@ model autoeditor_election {
   propose_time DateTime  @default(now()) @db.Timestamptz(6)
   open_time    DateTime? @db.Timestamptz(6)
   close_time   DateTime? @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -503,6 +612,8 @@ model autoeditor_election_vote {
   voter               Int
   vote                Int
   vote_time           DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 model cdtoc {
@@ -515,6 +626,7 @@ model cdtoc {
   created        DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([freedb_id], map: "cdtoc_idx_freedb_id")
+  @@schema("musicbrainz")
 }
 
 model cdtoc_raw {
@@ -527,16 +639,42 @@ model cdtoc_raw {
 
   @@unique([track_count, leadout_offset, track_offset], map: "cdtoc_raw_toc")
   @@index([discid], map: "cdtoc_raw_discid")
+  @@schema("musicbrainz")
 }
 
 model country_area {
   area Int @id
+
+  @@schema("musicbrainz")
+}
+
+model dbmirror_pending {
+  seqid                Int                    @id @default(autoincrement())
+  tablename            String                 @db.VarChar
+  op                   String?                @db.Char(1)
+  xid                  Int
+  dbmirror_pendingdata dbmirror_pendingdata[]
+
+  @@index([xid], map: "dbmirror_pending_xid_index")
+  @@schema("musicbrainz")
+}
+
+model dbmirror_pendingdata {
+  seqid            Int
+  iskey            Boolean
+  data             String?          @db.VarChar
+  dbmirror_pending dbmirror_pending @relation(fields: [seqid], references: [seqid], onDelete: Cascade)
+
+  @@id([seqid, iskey])
+  @@schema("musicbrainz")
 }
 
 model deleted_entity {
   gid        String   @id @db.Uuid
   data       Json
   deleted_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 model edit {
@@ -557,6 +695,7 @@ model edit {
   @@index([expire_time], map: "edit_idx_expire_time", type: Brin)
   @@index([open_time], map: "edit_idx_open_time", type: Brin)
   @@index([type, id], map: "edit_idx_type_id")
+  @@schema("musicbrainz")
 }
 
 model edit_area {
@@ -565,6 +704,7 @@ model edit_area {
 
   @@id([edit, area])
   @@index([area], map: "edit_area_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_artist {
@@ -575,12 +715,15 @@ model edit_artist {
   @@id([edit, artist])
   @@index([artist], map: "edit_artist_idx")
   @@index([status], map: "edit_artist_idx_status")
+  @@schema("musicbrainz")
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model edit_data {
   edit Int  @id
   data Json
+
+  @@schema("musicbrainz")
 }
 
 model edit_event {
@@ -589,6 +732,7 @@ model edit_event {
 
   @@id([edit, event])
   @@index([event], map: "edit_event_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_genre {
@@ -597,6 +741,7 @@ model edit_genre {
 
   @@id([edit, genre])
   @@index([genre], map: "edit_genre_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_instrument {
@@ -605,6 +750,7 @@ model edit_instrument {
 
   @@id([edit, instrument])
   @@index([instrument], map: "edit_instrument_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_label {
@@ -615,6 +761,7 @@ model edit_label {
   @@id([edit, label])
   @@index([label], map: "edit_label_idx")
   @@index([status], map: "edit_label_idx_status")
+  @@schema("musicbrainz")
 }
 
 model edit_mood {
@@ -623,6 +770,7 @@ model edit_mood {
 
   @@id([edit, mood])
   @@index([mood], map: "edit_mood_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_note {
@@ -634,6 +782,7 @@ model edit_note {
 
   @@index([edit], map: "edit_note_idx_edit")
   @@index([editor], map: "edit_note_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model edit_note_change {
@@ -647,6 +796,7 @@ model edit_note_change {
   reason        String            @default("")
 
   @@index([edit_note], map: "edit_note_change_idx_edit_note")
+  @@schema("musicbrainz")
 }
 
 model edit_note_recipient {
@@ -655,6 +805,7 @@ model edit_note_recipient {
 
   @@id([recipient, edit_note])
   @@index([recipient], map: "edit_note_recipient_idx_recipient")
+  @@schema("musicbrainz")
 }
 
 model edit_place {
@@ -663,6 +814,7 @@ model edit_place {
 
   @@id([edit, place])
   @@index([place], map: "edit_place_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_recording {
@@ -671,6 +823,7 @@ model edit_recording {
 
   @@id([edit, recording])
   @@index([recording], map: "edit_recording_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_release {
@@ -679,6 +832,7 @@ model edit_release {
 
   @@id([edit, release])
   @@index([release], map: "edit_release_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_release_group {
@@ -687,6 +841,7 @@ model edit_release_group {
 
   @@id([edit, release_group])
   @@index([release_group], map: "edit_release_group_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_series {
@@ -695,6 +850,7 @@ model edit_series {
 
   @@id([edit, series])
   @@index([series], map: "edit_series_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_url {
@@ -703,6 +859,7 @@ model edit_url {
 
   @@id([edit, url])
   @@index([url], map: "edit_url_idx")
+  @@schema("musicbrainz")
 }
 
 model edit_work {
@@ -711,6 +868,7 @@ model edit_work {
 
   @@id([edit, work])
   @@index([work], map: "edit_work_idx")
+  @@schema("musicbrainz")
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
@@ -731,6 +889,8 @@ model editor {
   password           String    @db.VarChar(128)
   ha1                String    @db.Char(32)
   deleted            Boolean   @default(false)
+
+  @@schema("musicbrainz")
 }
 
 model editor_collection {
@@ -743,6 +903,7 @@ model editor_collection {
   type        Int
 
   @@index([editor], map: "editor_collection_idx_editor")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -754,6 +915,7 @@ model editor_collection_area {
   comment    String    @default("")
 
   @@id([collection, area])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -765,6 +927,7 @@ model editor_collection_artist {
   comment    String    @default("")
 
   @@id([collection, artist])
+  @@schema("musicbrainz")
 }
 
 model editor_collection_collaborator {
@@ -772,6 +935,7 @@ model editor_collection_collaborator {
   editor     Int
 
   @@id([collection, editor])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -783,6 +947,7 @@ model editor_collection_deleted_entity {
   comment    String    @default("")
 
   @@id([collection, gid])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -794,6 +959,7 @@ model editor_collection_event {
   comment    String    @default("")
 
   @@id([collection, event])
+  @@schema("musicbrainz")
 }
 
 model editor_collection_gid_redirect {
@@ -802,6 +968,7 @@ model editor_collection_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "editor_collection_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -813,6 +980,7 @@ model editor_collection_instrument {
   comment    String    @default("")
 
   @@id([collection, instrument])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -824,6 +992,7 @@ model editor_collection_label {
   comment    String    @default("")
 
   @@id([collection, label])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -835,6 +1004,7 @@ model editor_collection_place {
   comment    String    @default("")
 
   @@id([collection, place])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -846,6 +1016,7 @@ model editor_collection_recording {
   comment    String    @default("")
 
   @@id([collection, recording])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -857,6 +1028,7 @@ model editor_collection_release {
   comment    String    @default("")
 
   @@id([collection, release])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -868,6 +1040,7 @@ model editor_collection_release_group {
   comment       String    @default("")
 
   @@id([collection, release_group])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -879,6 +1052,7 @@ model editor_collection_series {
   comment    String    @default("")
 
   @@id([collection, series])
+  @@schema("musicbrainz")
 }
 
 model editor_collection_type {
@@ -889,6 +1063,8 @@ model editor_collection_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "editor_collection_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -900,6 +1076,7 @@ model editor_collection_work {
   comment    String    @default("")
 
   @@id([collection, work])
+  @@schema("musicbrainz")
 }
 
 model editor_language {
@@ -909,6 +1086,7 @@ model editor_language {
 
   @@id([editor, language])
   @@index([language], map: "editor_language_idx_language")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -926,6 +1104,7 @@ model editor_oauth_token {
   code_challenge_method oauth_code_challenge_method?
 
   @@index([editor], map: "editor_oauth_token_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model editor_preference {
@@ -935,6 +1114,7 @@ model editor_preference {
   value  String @db.VarChar(100)
 
   @@unique([editor, name], map: "editor_preference_idx_editor_name")
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_artist {
@@ -945,6 +1125,7 @@ model editor_subscribe_artist {
 
   @@unique([editor, artist], map: "editor_subscribe_artist_idx_uniq")
   @@index([artist], map: "editor_subscribe_artist_idx_artist")
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_artist_deleted {
@@ -953,6 +1134,7 @@ model editor_subscribe_artist_deleted {
   deleted_by Int
 
   @@id([editor, gid])
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_collection {
@@ -965,6 +1147,7 @@ model editor_subscribe_collection {
 
   @@unique([editor, collection], map: "editor_subscribe_collection_idx_uniq")
   @@index([collection], map: "editor_subscribe_collection_idx_collection")
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_editor {
@@ -974,6 +1157,7 @@ model editor_subscribe_editor {
   last_edit_sent    Int
 
   @@unique([editor, subscribed_editor], map: "editor_subscribe_editor_idx_uniq")
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_label {
@@ -984,6 +1168,7 @@ model editor_subscribe_label {
 
   @@unique([editor, label], map: "editor_subscribe_label_idx_uniq")
   @@index([label], map: "editor_subscribe_label_idx_label")
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_label_deleted {
@@ -992,6 +1177,7 @@ model editor_subscribe_label_deleted {
   deleted_by Int
 
   @@id([editor, gid])
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_series {
@@ -1002,6 +1188,7 @@ model editor_subscribe_series {
 
   @@unique([editor, series], map: "editor_subscribe_series_idx_uniq")
   @@index([series], map: "editor_subscribe_series_idx_series")
+  @@schema("musicbrainz")
 }
 
 model editor_subscribe_series_deleted {
@@ -1010,9 +1197,11 @@ model editor_subscribe_series_deleted {
   deleted_by Int
 
   @@id([editor, gid])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model event {
   id               Int       @id @default(autoincrement())
   gid              String    @unique(map: "event_idx_gid") @db.Uuid
@@ -1033,9 +1222,11 @@ model event {
   ended            Boolean   @default(false)
 
   @@index([name], map: "event_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model event_alias {
   id                 Int       @id @default(autoincrement())
   event              Int
@@ -1055,6 +1246,7 @@ model event_alias {
   ended              Boolean   @default(false)
 
   @@index([event], map: "event_alias_idx_event")
+  @@schema("musicbrainz")
 }
 
 model event_alias_type {
@@ -1064,6 +1256,8 @@ model event_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "event_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model event_annotation {
@@ -1071,6 +1265,7 @@ model event_annotation {
   annotation Int
 
   @@id([event, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1082,6 +1277,7 @@ model event_attribute {
   event_attribute_text               String?
 
   @@index([event], map: "event_attribute_idx_event")
+  @@schema("musicbrainz")
 }
 
 model event_attribute_type {
@@ -1093,6 +1289,8 @@ model event_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "event_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model event_attribute_type_allowed_value {
@@ -1105,6 +1303,7 @@ model event_attribute_type_allowed_value {
   gid                  String  @unique(map: "event_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([event_attribute_type], map: "event_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model event_gid_redirect {
@@ -1113,6 +1312,7 @@ model event_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "event_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1121,6 +1321,8 @@ model event_meta {
   rating             Int?               @db.SmallInt
   rating_count       Int?
   event_art_presence event_art_presence @default(absent)
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1131,6 +1333,7 @@ model event_rating_raw {
 
   @@id([event, editor])
   @@index([editor], map: "event_rating_raw_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model event_tag {
@@ -1141,6 +1344,7 @@ model event_tag {
 
   @@id([event, tag])
   @@index([tag], map: "event_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model event_tag_raw {
@@ -1152,6 +1356,7 @@ model event_tag_raw {
   @@id([event, editor, tag])
   @@index([editor], map: "event_tag_raw_idx_editor")
   @@index([tag], map: "event_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model event_type {
@@ -1161,6 +1366,8 @@ model event_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "event_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model gender {
@@ -1170,6 +1377,8 @@ model gender {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "gender_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1181,6 +1390,8 @@ model genre {
   comment       String    @default("") @db.VarChar(255)
   edits_pending Int       @default(0)
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1203,6 +1414,7 @@ model genre_alias {
   ended              Boolean   @default(false)
 
   @@index([genre], map: "genre_alias_idx_genre")
+  @@schema("musicbrainz")
 }
 
 model genre_alias_type {
@@ -1212,6 +1424,8 @@ model genre_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "genre_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model genre_annotation {
@@ -1219,9 +1433,11 @@ model genre_annotation {
   annotation Int
 
   @@id([genre, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model instrument {
   id            Int       @id @default(autoincrement())
   gid           String    @unique(map: "instrument_idx_gid") @db.Uuid
@@ -1233,6 +1449,7 @@ model instrument {
   description   String    @default("")
 
   @@index([name], map: "instrument_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1255,6 +1472,7 @@ model instrument_alias {
   ended              Boolean   @default(false)
 
   @@index([instrument], map: "instrument_alias_idx_instrument")
+  @@schema("musicbrainz")
 }
 
 model instrument_alias_type {
@@ -1264,6 +1482,8 @@ model instrument_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "instrument_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model instrument_annotation {
@@ -1271,6 +1491,7 @@ model instrument_annotation {
   annotation Int
 
   @@id([instrument, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1282,6 +1503,7 @@ model instrument_attribute {
   instrument_attribute_text               String?
 
   @@index([instrument], map: "instrument_attribute_idx_instrument")
+  @@schema("musicbrainz")
 }
 
 model instrument_attribute_type {
@@ -1293,6 +1515,8 @@ model instrument_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "instrument_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model instrument_attribute_type_allowed_value {
@@ -1305,6 +1529,7 @@ model instrument_attribute_type_allowed_value {
   gid                       String  @unique(map: "instrument_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([instrument_attribute_type], map: "instrument_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model instrument_gid_redirect {
@@ -1313,6 +1538,7 @@ model instrument_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "instrument_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 model instrument_tag {
@@ -1323,6 +1549,7 @@ model instrument_tag {
 
   @@id([instrument, tag])
   @@index([tag], map: "instrument_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model instrument_tag_raw {
@@ -1335,6 +1562,7 @@ model instrument_tag_raw {
   @@index([editor], map: "instrument_tag_raw_idx_editor")
   @@index([instrument], map: "instrument_tag_raw_idx_instrument")
   @@index([tag], map: "instrument_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model instrument_type {
@@ -1344,6 +1572,8 @@ model instrument_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "instrument_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model iso_3166_1 {
@@ -1351,6 +1581,7 @@ model iso_3166_1 {
   code String @id @db.Char(2)
 
   @@index([area], map: "iso_3166_1_idx_area")
+  @@schema("musicbrainz")
 }
 
 model iso_3166_2 {
@@ -1358,6 +1589,7 @@ model iso_3166_2 {
   code String @id @db.VarChar(10)
 
   @@index([area], map: "iso_3166_2_idx_area")
+  @@schema("musicbrainz")
 }
 
 model iso_3166_3 {
@@ -1365,6 +1597,7 @@ model iso_3166_3 {
   code String @id @db.Char(4)
 
   @@index([area], map: "iso_3166_3_idx_area")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1379,6 +1612,7 @@ model isrc {
   @@unique([isrc, recording], map: "isrc_idx_isrc_recording")
   @@index([isrc], map: "isrc_idx_isrc")
   @@index([recording], map: "isrc_idx_recording")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1392,6 +1626,7 @@ model iswc {
 
   @@unique([iswc, work], map: "iswc_idx_iswc")
   @@index([work], map: "iswc_idx_work")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1408,6 +1643,7 @@ model l_area_area {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_area_idx_uniq")
   @@index([entity1], map: "l_area_area_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1424,6 +1660,7 @@ model l_area_artist {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_artist_idx_uniq")
   @@index([entity1], map: "l_area_artist_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1440,6 +1677,7 @@ model l_area_event {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_event_idx_uniq")
   @@index([entity1], map: "l_area_event_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1456,6 +1694,7 @@ model l_area_genre {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_genre_idx_uniq")
   @@index([entity1], map: "l_area_genre_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1472,6 +1711,7 @@ model l_area_instrument {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_instrument_idx_uniq")
   @@index([entity1], map: "l_area_instrument_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1488,6 +1728,7 @@ model l_area_label {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_label_idx_uniq")
   @@index([entity1], map: "l_area_label_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1504,6 +1745,7 @@ model l_area_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_mood_idx_uniq")
   @@index([entity1], map: "l_area_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1520,6 +1762,7 @@ model l_area_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_place_idx_uniq")
   @@index([entity1], map: "l_area_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1536,6 +1779,7 @@ model l_area_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_recording_idx_uniq")
   @@index([entity1], map: "l_area_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1552,6 +1796,7 @@ model l_area_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_release_idx_uniq")
   @@index([entity1], map: "l_area_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1568,6 +1813,7 @@ model l_area_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_release_group_idx_uniq")
   @@index([entity1], map: "l_area_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1584,6 +1830,7 @@ model l_area_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_series_idx_uniq")
   @@index([entity1], map: "l_area_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1600,6 +1847,7 @@ model l_area_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_url_idx_uniq")
   @@index([entity1], map: "l_area_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1616,6 +1864,7 @@ model l_area_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_area_work_idx_uniq")
   @@index([entity1], map: "l_area_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1632,6 +1881,7 @@ model l_artist_artist {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_artist_idx_uniq")
   @@index([entity1], map: "l_artist_artist_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1648,6 +1898,7 @@ model l_artist_event {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_event_idx_uniq")
   @@index([entity1], map: "l_artist_event_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1664,6 +1915,7 @@ model l_artist_genre {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_genre_idx_uniq")
   @@index([entity1], map: "l_artist_genre_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1680,6 +1932,7 @@ model l_artist_instrument {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_instrument_idx_uniq")
   @@index([entity1], map: "l_artist_instrument_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1696,6 +1949,7 @@ model l_artist_label {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_label_idx_uniq")
   @@index([entity1], map: "l_artist_label_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1712,6 +1966,7 @@ model l_artist_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_mood_idx_uniq")
   @@index([entity1], map: "l_artist_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1728,6 +1983,7 @@ model l_artist_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_place_idx_uniq")
   @@index([entity1], map: "l_artist_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1744,6 +2000,7 @@ model l_artist_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_recording_idx_uniq")
   @@index([entity1], map: "l_artist_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1760,6 +2017,7 @@ model l_artist_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_release_idx_uniq")
   @@index([entity1], map: "l_artist_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1776,6 +2034,7 @@ model l_artist_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_release_group_idx_uniq")
   @@index([entity1], map: "l_artist_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1792,6 +2051,7 @@ model l_artist_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_series_idx_uniq")
   @@index([entity1], map: "l_artist_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1808,6 +2068,7 @@ model l_artist_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_url_idx_uniq")
   @@index([entity1], map: "l_artist_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1824,6 +2085,7 @@ model l_artist_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_artist_work_idx_uniq")
   @@index([entity1], map: "l_artist_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1840,6 +2102,7 @@ model l_event_event {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_event_idx_uniq")
   @@index([entity1], map: "l_event_event_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1856,6 +2119,7 @@ model l_event_genre {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_genre_idx_uniq")
   @@index([entity1], map: "l_event_genre_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1872,6 +2136,7 @@ model l_event_instrument {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_instrument_idx_uniq")
   @@index([entity1], map: "l_event_instrument_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1888,6 +2153,7 @@ model l_event_label {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_label_idx_uniq")
   @@index([entity1], map: "l_event_label_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1904,6 +2170,7 @@ model l_event_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_mood_idx_uniq")
   @@index([entity1], map: "l_event_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1920,6 +2187,7 @@ model l_event_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_place_idx_uniq")
   @@index([entity1], map: "l_event_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1936,6 +2204,7 @@ model l_event_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_recording_idx_uniq")
   @@index([entity1], map: "l_event_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1952,6 +2221,7 @@ model l_event_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_release_idx_uniq")
   @@index([entity1], map: "l_event_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1968,6 +2238,7 @@ model l_event_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_release_group_idx_uniq")
   @@index([entity1], map: "l_event_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1984,6 +2255,7 @@ model l_event_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_series_idx_uniq")
   @@index([entity1], map: "l_event_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2000,6 +2272,7 @@ model l_event_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_url_idx_uniq")
   @@index([entity1], map: "l_event_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2016,6 +2289,7 @@ model l_event_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_event_work_idx_uniq")
   @@index([entity1], map: "l_event_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2032,6 +2306,7 @@ model l_genre_genre {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_genre_idx_uniq")
   @@index([entity1], map: "l_genre_genre_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2048,6 +2323,7 @@ model l_genre_instrument {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_instrument_idx_uniq")
   @@index([entity1], map: "l_genre_instrument_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2064,6 +2340,7 @@ model l_genre_label {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_label_idx_uniq")
   @@index([entity1], map: "l_genre_label_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2080,6 +2357,7 @@ model l_genre_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_mood_idx_uniq")
   @@index([entity1], map: "l_genre_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2096,6 +2374,7 @@ model l_genre_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_place_idx_uniq")
   @@index([entity1], map: "l_genre_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2112,6 +2391,7 @@ model l_genre_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_recording_idx_uniq")
   @@index([entity1], map: "l_genre_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2128,6 +2408,7 @@ model l_genre_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_release_idx_uniq")
   @@index([entity1], map: "l_genre_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2144,6 +2425,7 @@ model l_genre_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_release_group_idx_uniq")
   @@index([entity1], map: "l_genre_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2160,6 +2442,7 @@ model l_genre_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_series_idx_uniq")
   @@index([entity1], map: "l_genre_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2176,6 +2459,7 @@ model l_genre_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_url_idx_uniq")
   @@index([entity1], map: "l_genre_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2192,6 +2476,7 @@ model l_genre_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_genre_work_idx_uniq")
   @@index([entity1], map: "l_genre_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2208,6 +2493,7 @@ model l_instrument_instrument {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_instrument_idx_uniq")
   @@index([entity1], map: "l_instrument_instrument_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2224,6 +2510,7 @@ model l_instrument_label {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_label_idx_uniq")
   @@index([entity1], map: "l_instrument_label_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2240,6 +2527,7 @@ model l_instrument_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_mood_idx_uniq")
   @@index([entity1], map: "l_instrument_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2256,6 +2544,7 @@ model l_instrument_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_place_idx_uniq")
   @@index([entity1], map: "l_instrument_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2272,6 +2561,7 @@ model l_instrument_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_recording_idx_uniq")
   @@index([entity1], map: "l_instrument_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2288,6 +2578,7 @@ model l_instrument_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_release_idx_uniq")
   @@index([entity1], map: "l_instrument_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2304,6 +2595,7 @@ model l_instrument_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_release_group_idx_uniq")
   @@index([entity1], map: "l_instrument_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2320,6 +2612,7 @@ model l_instrument_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_series_idx_uniq")
   @@index([entity1], map: "l_instrument_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2336,6 +2629,7 @@ model l_instrument_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_url_idx_uniq")
   @@index([entity1], map: "l_instrument_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2352,6 +2646,7 @@ model l_instrument_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_instrument_work_idx_uniq")
   @@index([entity1], map: "l_instrument_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2368,6 +2663,7 @@ model l_label_label {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_label_idx_uniq")
   @@index([entity1], map: "l_label_label_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2384,6 +2680,7 @@ model l_label_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_mood_idx_uniq")
   @@index([entity1], map: "l_label_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2400,6 +2697,7 @@ model l_label_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_place_idx_uniq")
   @@index([entity1], map: "l_label_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2416,6 +2714,7 @@ model l_label_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_recording_idx_uniq")
   @@index([entity1], map: "l_label_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2432,6 +2731,7 @@ model l_label_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_release_idx_uniq")
   @@index([entity1], map: "l_label_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2448,6 +2748,7 @@ model l_label_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_release_group_idx_uniq")
   @@index([entity1], map: "l_label_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2464,6 +2765,7 @@ model l_label_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_series_idx_uniq")
   @@index([entity1], map: "l_label_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2480,6 +2782,7 @@ model l_label_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_url_idx_uniq")
   @@index([entity1], map: "l_label_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2496,6 +2799,7 @@ model l_label_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_label_work_idx_uniq")
   @@index([entity1], map: "l_label_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2512,6 +2816,7 @@ model l_mood_mood {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_mood_idx_uniq")
   @@index([entity1], map: "l_mood_mood_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2528,6 +2833,7 @@ model l_mood_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_place_idx_uniq")
   @@index([entity1], map: "l_mood_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2544,6 +2850,7 @@ model l_mood_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_recording_idx_uniq")
   @@index([entity1], map: "l_mood_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2560,6 +2867,7 @@ model l_mood_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_release_idx_uniq")
   @@index([entity1], map: "l_mood_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2576,6 +2884,7 @@ model l_mood_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_release_group_idx_uniq")
   @@index([entity1], map: "l_mood_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2592,6 +2901,7 @@ model l_mood_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_series_idx_uniq")
   @@index([entity1], map: "l_mood_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2608,6 +2918,7 @@ model l_mood_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_url_idx_uniq")
   @@index([entity1], map: "l_mood_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2624,6 +2935,7 @@ model l_mood_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_mood_work_idx_uniq")
   @@index([entity1], map: "l_mood_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2640,6 +2952,7 @@ model l_place_place {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_place_idx_uniq")
   @@index([entity1], map: "l_place_place_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2656,6 +2969,7 @@ model l_place_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_recording_idx_uniq")
   @@index([entity1], map: "l_place_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2672,6 +2986,7 @@ model l_place_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_release_idx_uniq")
   @@index([entity1], map: "l_place_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2688,6 +3003,7 @@ model l_place_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_release_group_idx_uniq")
   @@index([entity1], map: "l_place_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2704,6 +3020,7 @@ model l_place_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_series_idx_uniq")
   @@index([entity1], map: "l_place_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2720,6 +3037,7 @@ model l_place_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_url_idx_uniq")
   @@index([entity1], map: "l_place_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2736,6 +3054,7 @@ model l_place_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_place_work_idx_uniq")
   @@index([entity1], map: "l_place_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2752,6 +3071,7 @@ model l_recording_recording {
 
   @@unique([entity0, entity1, link, link_order], map: "l_recording_recording_idx_uniq")
   @@index([entity1], map: "l_recording_recording_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2768,6 +3088,7 @@ model l_recording_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_recording_release_idx_uniq")
   @@index([entity1], map: "l_recording_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2784,6 +3105,7 @@ model l_recording_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_recording_release_group_idx_uniq")
   @@index([entity1], map: "l_recording_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2800,6 +3122,7 @@ model l_recording_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_recording_series_idx_uniq")
   @@index([entity1], map: "l_recording_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2816,6 +3139,7 @@ model l_recording_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_recording_url_idx_uniq")
   @@index([entity1], map: "l_recording_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2832,6 +3156,7 @@ model l_recording_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_recording_work_idx_uniq")
   @@index([entity1], map: "l_recording_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2848,6 +3173,7 @@ model l_release_group_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_group_release_group_idx_uniq")
   @@index([entity1], map: "l_release_group_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2864,6 +3190,7 @@ model l_release_group_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_group_series_idx_uniq")
   @@index([entity1], map: "l_release_group_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2880,6 +3207,7 @@ model l_release_group_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_group_url_idx_uniq")
   @@index([entity1], map: "l_release_group_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2896,6 +3224,7 @@ model l_release_group_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_group_work_idx_uniq")
   @@index([entity1], map: "l_release_group_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2912,6 +3241,7 @@ model l_release_release {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_release_idx_uniq")
   @@index([entity1], map: "l_release_release_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2928,6 +3258,7 @@ model l_release_release_group {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_release_group_idx_uniq")
   @@index([entity1], map: "l_release_release_group_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2944,6 +3275,7 @@ model l_release_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_series_idx_uniq")
   @@index([entity1], map: "l_release_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2960,6 +3292,7 @@ model l_release_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_url_idx_uniq")
   @@index([entity1], map: "l_release_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2976,6 +3309,7 @@ model l_release_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_release_work_idx_uniq")
   @@index([entity1], map: "l_release_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -2992,6 +3326,7 @@ model l_series_series {
 
   @@unique([entity0, entity1, link, link_order], map: "l_series_series_idx_uniq")
   @@index([entity1], map: "l_series_series_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3008,6 +3343,7 @@ model l_series_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_series_url_idx_uniq")
   @@index([entity1], map: "l_series_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3024,6 +3360,7 @@ model l_series_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_series_work_idx_uniq")
   @@index([entity1], map: "l_series_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3040,6 +3377,7 @@ model l_url_url {
 
   @@unique([entity0, entity1, link, link_order], map: "l_url_url_idx_uniq")
   @@index([entity1], map: "l_url_url_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3056,6 +3394,7 @@ model l_url_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_url_work_idx_uniq")
   @@index([entity1], map: "l_url_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3072,6 +3411,7 @@ model l_work_work {
 
   @@unique([entity0, entity1, link, link_order], map: "l_work_work_idx_uniq")
   @@index([entity1], map: "l_work_work_idx_entity1")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3097,6 +3437,7 @@ model label {
   @@index([area], map: "label_idx_area")
   @@index([name], map: "label_idx_musicbrainz_collate")
   @@index([name], map: "label_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3120,6 +3461,7 @@ model label_alias {
   ended              Boolean   @default(false)
 
   @@index([label], map: "label_alias_idx_label")
+  @@schema("musicbrainz")
 }
 
 model label_alias_type {
@@ -3129,6 +3471,8 @@ model label_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "label_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model label_annotation {
@@ -3136,6 +3480,7 @@ model label_annotation {
   annotation Int
 
   @@id([label, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3147,6 +3492,7 @@ model label_attribute {
   label_attribute_text               String?
 
   @@index([label], map: "label_attribute_idx_label")
+  @@schema("musicbrainz")
 }
 
 model label_attribute_type {
@@ -3158,6 +3504,8 @@ model label_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "label_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model label_attribute_type_allowed_value {
@@ -3170,6 +3518,7 @@ model label_attribute_type_allowed_value {
   gid                  String  @unique(map: "label_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([label_attribute_type], map: "label_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model label_gid_redirect {
@@ -3178,6 +3527,7 @@ model label_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "label_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3188,6 +3538,7 @@ model label_ipi {
   created       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([label, ipi])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3198,6 +3549,7 @@ model label_isni {
   created       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([label, isni])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3205,6 +3557,8 @@ model label_meta {
   id           Int  @id
   rating       Int? @db.SmallInt
   rating_count Int?
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3215,6 +3569,7 @@ model label_rating_raw {
 
   @@id([label, editor])
   @@index([editor], map: "label_rating_raw_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model label_tag {
@@ -3225,6 +3580,7 @@ model label_tag {
 
   @@id([label, tag])
   @@index([tag], map: "label_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model label_tag_raw {
@@ -3236,6 +3592,7 @@ model label_tag_raw {
   @@id([label, editor, tag])
   @@index([editor], map: "label_tag_raw_idx_editor")
   @@index([tag], map: "label_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model label_type {
@@ -3245,6 +3602,8 @@ model label_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "label_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3256,6 +3615,8 @@ model language {
   name        String  @db.VarChar(100)
   frequency   Int     @default(0) @db.SmallInt
   iso_code_3  String? @unique(map: "language_idx_iso_code_3") @db.Char(3)
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3273,6 +3634,7 @@ model link {
   ended            Boolean   @default(false)
 
   @@index([link_type, attribute_count], map: "link_idx_type_attr")
+  @@schema("musicbrainz")
 }
 
 model link_attribute {
@@ -3281,6 +3643,7 @@ model link_attribute {
   created        DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([link, attribute_type])
+  @@schema("musicbrainz")
 }
 
 model link_attribute_credit {
@@ -3289,6 +3652,7 @@ model link_attribute_credit {
   credited_as    String
 
   @@id([link, attribute_type])
+  @@schema("musicbrainz")
 }
 
 model link_attribute_text_value {
@@ -3297,6 +3661,7 @@ model link_attribute_text_value {
   text_value     String
 
   @@id([link, attribute_type])
+  @@schema("musicbrainz")
 }
 
 model link_attribute_type {
@@ -3308,14 +3673,20 @@ model link_attribute_type {
   name         String    @db.VarChar(255)
   description  String?
   last_updated DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 model link_creditable_attribute_type {
   attribute_type Int @id
+
+  @@schema("musicbrainz")
 }
 
 model link_text_attribute_type {
   attribute_type Int @id
+
+  @@schema("musicbrainz")
 }
 
 model link_type {
@@ -3336,6 +3707,8 @@ model link_type {
   has_dates           Boolean   @default(true)
   entity0_cardinality Int       @default(0) @db.SmallInt
   entity1_cardinality Int       @default(0) @db.SmallInt
+
+  @@schema("musicbrainz")
 }
 
 model link_type_attribute_type {
@@ -3346,6 +3719,7 @@ model link_type_attribute_type {
   last_updated   DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([link_type, attribute_type])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3359,7 +3733,9 @@ model medium {
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
   track_count   Int       @default(0)
 
+  @@index([release, position], map: "medium_idx_release_position")
   @@index([track_count], map: "medium_idx_track_count")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3371,6 +3747,7 @@ model medium_attribute {
   medium_attribute_text               String?
 
   @@index([medium], map: "medium_attribute_idx_medium")
+  @@schema("musicbrainz")
 }
 
 model medium_attribute_type {
@@ -3382,6 +3759,8 @@ model medium_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "medium_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model medium_attribute_type_allowed_format {
@@ -3389,6 +3768,7 @@ model medium_attribute_type_allowed_format {
   medium_attribute_type Int
 
   @@id([medium_format, medium_attribute_type])
+  @@schema("musicbrainz")
 }
 
 model medium_attribute_type_allowed_value {
@@ -3401,6 +3781,7 @@ model medium_attribute_type_allowed_value {
   gid                   String  @unique(map: "medium_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([medium_attribute_type], map: "medium_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model medium_attribute_type_allowed_value_allowed_format {
@@ -3408,6 +3789,7 @@ model medium_attribute_type_allowed_value_allowed_format {
   medium_attribute_type_allowed_value Int
 
   @@id([medium_format, medium_attribute_type_allowed_value])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3421,6 +3803,7 @@ model medium_cdtoc {
   @@unique([medium, cdtoc], map: "medium_cdtoc_idx_uniq")
   @@index([cdtoc], map: "medium_cdtoc_idx_cdtoc")
   @@index([medium], map: "medium_cdtoc_idx_medium")
+  @@schema("musicbrainz")
 }
 
 model medium_format {
@@ -3432,6 +3815,8 @@ model medium_format {
   has_discids Boolean @default(false)
   description String?
   gid         String  @unique(map: "medium_format_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model medium_index {
@@ -3439,6 +3824,7 @@ model medium_index {
   toc    Unsupported("cube")?
 
   @@index([toc], map: "medium_index_idx", type: Gist)
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3450,6 +3836,8 @@ model mood {
   comment       String    @default("") @db.VarChar(255)
   edits_pending Int       @default(0)
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3472,6 +3860,7 @@ model mood_alias {
   ended              Boolean   @default(false)
 
   @@index([mood], map: "mood_alias_idx_mood")
+  @@schema("musicbrainz")
 }
 
 model mood_alias_type {
@@ -3481,6 +3870,8 @@ model mood_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "mood_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model mood_annotation {
@@ -3488,6 +3879,7 @@ model mood_annotation {
   annotation Int
 
   @@id([mood, annotation])
+  @@schema("musicbrainz")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -3496,12 +3888,15 @@ model old_editor_name {
   name String @db.VarChar(64)
 
   @@ignore
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model orderable_link_type {
   link_type Int @id
   direction Int @default(1) @db.SmallInt
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3527,6 +3922,7 @@ model place {
 
   @@index([area], map: "place_idx_area")
   @@index([name], map: "place_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3550,6 +3946,7 @@ model place_alias {
   ended              Boolean   @default(false)
 
   @@index([place], map: "place_alias_idx_place")
+  @@schema("musicbrainz")
 }
 
 model place_alias_type {
@@ -3559,6 +3956,8 @@ model place_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "place_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model place_annotation {
@@ -3566,6 +3965,7 @@ model place_annotation {
   annotation Int
 
   @@id([place, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3577,6 +3977,7 @@ model place_attribute {
   place_attribute_text               String?
 
   @@index([place], map: "place_attribute_idx_place")
+  @@schema("musicbrainz")
 }
 
 model place_attribute_type {
@@ -3588,6 +3989,8 @@ model place_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "place_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model place_attribute_type_allowed_value {
@@ -3600,6 +4003,7 @@ model place_attribute_type_allowed_value {
   gid                  String  @unique(map: "place_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([place_attribute_type], map: "place_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model place_gid_redirect {
@@ -3608,6 +4012,7 @@ model place_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "place_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3615,6 +4020,8 @@ model place_meta {
   id           Int  @id
   rating       Int? @db.SmallInt
   rating_count Int?
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3625,6 +4032,7 @@ model place_rating_raw {
 
   @@id([place, editor])
   @@index([editor], map: "place_rating_raw_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model place_tag {
@@ -3635,6 +4043,7 @@ model place_tag {
 
   @@id([place, tag])
   @@index([tag], map: "place_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model place_tag_raw {
@@ -3646,6 +4055,7 @@ model place_tag_raw {
   @@id([place, editor, tag])
   @@index([editor], map: "place_tag_raw_idx_editor")
   @@index([tag], map: "place_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model place_type {
@@ -3655,9 +4065,12 @@ model place_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "place_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model recording {
   id            Int       @id @default(autoincrement())
   gid           String    @unique(map: "recording_idx_gid") @db.Uuid
@@ -3672,9 +4085,11 @@ model recording {
   @@index([artist_credit], map: "recording_idx_artist_credit")
   @@index([name], map: "recording_idx_musicbrainz_collate")
   @@index([name], map: "recording_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model recording_alias {
   id                 Int       @id @default(autoincrement())
   recording          Int
@@ -3694,6 +4109,7 @@ model recording_alias {
   ended              Boolean   @default(false)
 
   @@index([recording], map: "recording_alias_idx_recording")
+  @@schema("musicbrainz")
 }
 
 model recording_alias_type {
@@ -3703,6 +4119,8 @@ model recording_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "recording_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model recording_annotation {
@@ -3710,6 +4128,7 @@ model recording_annotation {
   annotation Int
 
   @@id([recording, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3721,6 +4140,7 @@ model recording_attribute {
   recording_attribute_text               String?
 
   @@index([recording], map: "recording_attribute_idx_recording")
+  @@schema("musicbrainz")
 }
 
 model recording_attribute_type {
@@ -3732,6 +4152,8 @@ model recording_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "recording_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model recording_attribute_type_allowed_value {
@@ -3744,6 +4166,7 @@ model recording_attribute_type_allowed_value {
   gid                      String  @unique(map: "recording_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([recording_attribute_type], map: "recording_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model recording_first_release_date {
@@ -3751,6 +4174,8 @@ model recording_first_release_date {
   year      Int? @db.SmallInt
   month     Int? @db.SmallInt
   day       Int? @db.SmallInt
+
+  @@schema("musicbrainz")
 }
 
 model recording_gid_redirect {
@@ -3759,6 +4184,7 @@ model recording_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "recording_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3766,6 +4192,8 @@ model recording_meta {
   id           Int  @id
   rating       Int? @db.SmallInt
   rating_count Int?
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3776,6 +4204,7 @@ model recording_rating_raw {
 
   @@id([recording, editor])
   @@index([editor], map: "recording_rating_raw_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model recording_tag {
@@ -3786,6 +4215,7 @@ model recording_tag {
 
   @@id([recording, tag])
   @@index([tag], map: "recording_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model recording_tag_raw {
@@ -3798,9 +4228,11 @@ model recording_tag_raw {
   @@index([editor], map: "recording_tag_raw_idx_editor")
   @@index([tag], map: "recording_tag_raw_idx_tag")
   @@index([recording], map: "recording_tag_raw_idx_track")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model release {
   id            Int       @id @default(autoincrement())
   gid           String    @unique(map: "release_idx_gid") @db.Uuid
@@ -3821,9 +4253,11 @@ model release {
   @@index([name], map: "release_idx_musicbrainz_collate")
   @@index([name], map: "release_idx_name")
   @@index([release_group], map: "release_idx_release_group")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model release_alias {
   id                 Int       @id @default(autoincrement())
   release            Int
@@ -3843,6 +4277,7 @@ model release_alias {
   ended              Boolean   @default(false)
 
   @@index([release], map: "release_alias_idx_release")
+  @@schema("musicbrainz")
 }
 
 model release_alias_type {
@@ -3852,6 +4287,8 @@ model release_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_annotation {
@@ -3859,6 +4296,7 @@ model release_annotation {
   annotation Int
 
   @@id([release, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3870,6 +4308,7 @@ model release_attribute {
   release_attribute_text               String?
 
   @@index([release], map: "release_attribute_idx_release")
+  @@schema("musicbrainz")
 }
 
 model release_attribute_type {
@@ -3881,6 +4320,8 @@ model release_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_attribute_type_allowed_value {
@@ -3893,6 +4334,7 @@ model release_attribute_type_allowed_value {
   gid                    String  @unique(map: "release_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([release_attribute_type], map: "release_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model release_country {
@@ -3904,6 +4346,7 @@ model release_country {
 
   @@id([release, country])
   @@index([country], map: "release_country_idx_country")
+  @@schema("musicbrainz")
 }
 
 model release_first_release_date {
@@ -3911,6 +4354,8 @@ model release_first_release_date {
   year    Int? @db.SmallInt
   month   Int? @db.SmallInt
   day     Int? @db.SmallInt
+
+  @@schema("musicbrainz")
 }
 
 model release_gid_redirect {
@@ -3919,9 +4364,11 @@ model release_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "release_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model release_group {
   id            Int       @id @default(autoincrement())
   gid           String    @unique(map: "release_group_idx_gid") @db.Uuid
@@ -3935,9 +4382,11 @@ model release_group {
   @@index([artist_credit], map: "release_group_idx_artist_credit")
   @@index([name], map: "release_group_idx_musicbrainz_collate")
   @@index([name], map: "release_group_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model release_group_alias {
   id                 Int       @id @default(autoincrement())
   release_group      Int
@@ -3957,6 +4406,7 @@ model release_group_alias {
   ended              Boolean   @default(false)
 
   @@index([release_group], map: "release_group_alias_idx_release_group")
+  @@schema("musicbrainz")
 }
 
 model release_group_alias_type {
@@ -3966,6 +4416,8 @@ model release_group_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_group_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_group_annotation {
@@ -3973,6 +4425,7 @@ model release_group_annotation {
   annotation    Int
 
   @@id([release_group, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -3984,6 +4437,7 @@ model release_group_attribute {
   release_group_attribute_text               String?
 
   @@index([release_group], map: "release_group_attribute_idx_release_group")
+  @@schema("musicbrainz")
 }
 
 model release_group_attribute_type {
@@ -3995,6 +4449,8 @@ model release_group_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_group_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_group_attribute_type_allowed_value {
@@ -4007,6 +4463,7 @@ model release_group_attribute_type_allowed_value {
   gid                          String  @unique(map: "release_group_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([release_group_attribute_type], map: "release_group_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model release_group_gid_redirect {
@@ -4015,6 +4472,7 @@ model release_group_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "release_group_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4026,6 +4484,8 @@ model release_group_meta {
   first_release_date_day   Int? @db.SmallInt
   rating                   Int? @db.SmallInt
   rating_count             Int?
+
+  @@schema("musicbrainz")
 }
 
 model release_group_primary_type {
@@ -4035,6 +4495,8 @@ model release_group_primary_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_group_primary_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4045,6 +4507,7 @@ model release_group_rating_raw {
 
   @@id([release_group, editor])
   @@index([editor], map: "release_group_rating_raw_idx_editor")
+  @@schema("musicbrainz")
 }
 
 model release_group_secondary_type {
@@ -4054,6 +4517,8 @@ model release_group_secondary_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_group_secondary_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_group_secondary_type_join {
@@ -4062,6 +4527,7 @@ model release_group_secondary_type_join {
   created        DateTime @default(now()) @db.Timestamptz(6)
 
   @@id([release_group, secondary_type])
+  @@schema("musicbrainz")
 }
 
 model release_group_tag {
@@ -4072,6 +4538,7 @@ model release_group_tag {
 
   @@id([release_group, tag])
   @@index([tag], map: "release_group_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model release_group_tag_raw {
@@ -4083,6 +4550,7 @@ model release_group_tag_raw {
   @@id([release_group, editor, tag])
   @@index([editor], map: "release_group_tag_raw_idx_editor")
   @@index([tag], map: "release_group_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model release_label {
@@ -4094,6 +4562,7 @@ model release_label {
 
   @@index([label], map: "release_label_idx_label")
   @@index([release], map: "release_label_idx_release")
+  @@schema("musicbrainz")
 }
 
 model release_meta {
@@ -4102,6 +4571,8 @@ model release_meta {
   info_url           String?            @db.VarChar(255)
   amazon_asin        String?            @db.VarChar(10)
   cover_art_presence cover_art_presence @default(absent)
+
+  @@schema("musicbrainz")
 }
 
 model release_packaging {
@@ -4111,6 +4582,8 @@ model release_packaging {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_packaging_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_raw {
@@ -4124,6 +4597,8 @@ model release_raw {
   source        Int?      @default(0)
   barcode       String?   @db.VarChar(255)
   comment       String    @default("") @db.VarChar(255)
+
+  @@schema("musicbrainz")
 }
 
 model release_status {
@@ -4133,6 +4608,8 @@ model release_status {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "release_status_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model release_tag {
@@ -4143,6 +4620,7 @@ model release_tag {
 
   @@id([release, tag])
   @@index([tag], map: "release_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model release_tag_raw {
@@ -4154,6 +4632,7 @@ model release_tag_raw {
   @@id([release, editor, tag])
   @@index([editor], map: "release_tag_raw_idx_editor")
   @@index([tag], map: "release_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model release_unknown_country {
@@ -4161,6 +4640,8 @@ model release_unknown_country {
   date_year  Int? @db.SmallInt
   date_month Int? @db.SmallInt
   date_day   Int? @db.SmallInt
+
+  @@schema("musicbrainz")
 }
 
 model replication_control {
@@ -4168,6 +4649,8 @@ model replication_control {
   current_schema_sequence      Int
   current_replication_sequence Int?
   last_replication_date        DateTime? @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 model script {
@@ -4176,6 +4659,8 @@ model script {
   iso_number String @db.Char(3)
   name       String @db.VarChar(100)
   frequency  Int    @default(0) @db.SmallInt
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4191,6 +4676,7 @@ model series {
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([name], map: "series_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4214,6 +4700,7 @@ model series_alias {
   ended              Boolean   @default(false)
 
   @@index([series], map: "series_alias_idx_series")
+  @@schema("musicbrainz")
 }
 
 model series_alias_type {
@@ -4223,6 +4710,8 @@ model series_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "series_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model series_annotation {
@@ -4230,6 +4719,7 @@ model series_annotation {
   annotation Int
 
   @@id([series, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4241,6 +4731,7 @@ model series_attribute {
   series_attribute_text               String?
 
   @@index([series], map: "series_attribute_idx_series")
+  @@schema("musicbrainz")
 }
 
 model series_attribute_type {
@@ -4252,6 +4743,8 @@ model series_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "series_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model series_attribute_type_allowed_value {
@@ -4264,6 +4757,7 @@ model series_attribute_type_allowed_value {
   gid                   String  @unique(map: "series_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([series_attribute_type], map: "series_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model series_gid_redirect {
@@ -4272,6 +4766,7 @@ model series_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "series_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 model series_ordering_type {
@@ -4281,6 +4776,8 @@ model series_ordering_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "series_ordering_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model series_tag {
@@ -4291,6 +4788,7 @@ model series_tag {
 
   @@id([series, tag])
   @@index([tag], map: "series_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model series_tag_raw {
@@ -4303,6 +4801,7 @@ model series_tag_raw {
   @@index([editor], map: "series_tag_raw_idx_editor")
   @@index([series], map: "series_tag_raw_idx_series")
   @@index([tag], map: "series_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model series_type {
@@ -4313,12 +4812,17 @@ model series_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "series_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model tag {
   id        Int    @id @default(autoincrement())
   name      String @unique(map: "tag_idx_name") @db.VarChar(255)
   ref_count Int    @default(0)
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4329,6 +4833,7 @@ model tag_relation {
   last_updated DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([tag1, tag2])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4347,7 +4852,9 @@ model track {
   is_data_track Boolean   @default(false)
 
   @@index([artist_credit], map: "track_idx_artist_credit")
+  @@index([medium, position], map: "track_idx_medium_position")
   @@index([recording], map: "track_idx_recording")
+  @@schema("musicbrainz")
 }
 
 model track_gid_redirect {
@@ -4356,6 +4863,7 @@ model track_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "track_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 model track_raw {
@@ -4366,6 +4874,7 @@ model track_raw {
   sequence Int
 
   @@index([release], map: "track_raw_idx_release")
+  @@schema("musicbrainz")
 }
 
 model unreferenced_row_log {
@@ -4375,6 +4884,7 @@ model unreferenced_row_log {
 
   @@id([table_name, row_id])
   @@index([inserted], map: "unreferenced_row_log_idx_inserted", type: Brin)
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4384,6 +4894,8 @@ model url {
   url           String    @unique(map: "url_idx_url")
   edits_pending Int       @default(0)
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("musicbrainz")
 }
 
 model url_gid_redirect {
@@ -4392,6 +4904,7 @@ model url_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "url_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 model vote {
@@ -4404,9 +4917,11 @@ model vote {
 
   @@index([edit], map: "vote_idx_edit")
   @@index([editor, vote_time], map: "vote_idx_editor_vote_time")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model work {
   id            Int       @id @default(autoincrement())
   gid           String    @unique(map: "work_idx_gid") @db.Uuid
@@ -4418,9 +4933,11 @@ model work {
 
   @@index([name], map: "work_idx_musicbrainz_collate")
   @@index([name], map: "work_idx_name")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model work_alias {
   id                 Int       @id @default(autoincrement())
   work               Int
@@ -4440,6 +4957,7 @@ model work_alias {
   ended              Boolean   @default(false)
 
   @@index([work], map: "work_alias_idx_work")
+  @@schema("musicbrainz")
 }
 
 model work_alias_type {
@@ -4449,6 +4967,8 @@ model work_alias_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "work_alias_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model work_annotation {
@@ -4456,6 +4976,7 @@ model work_annotation {
   annotation Int
 
   @@id([work, annotation])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4467,6 +4988,7 @@ model work_attribute {
   work_attribute_text               String?
 
   @@index([work], map: "work_attribute_idx_work")
+  @@schema("musicbrainz")
 }
 
 model work_attribute_type {
@@ -4478,6 +5000,8 @@ model work_attribute_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "work_attribute_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 model work_attribute_type_allowed_value {
@@ -4490,6 +5014,7 @@ model work_attribute_type_allowed_value {
   gid                 String  @unique(map: "work_attribute_type_allowed_value_idx_gid") @db.Uuid
 
   @@index([work_attribute_type], map: "work_attribute_type_allowed_value_idx_name")
+  @@schema("musicbrainz")
 }
 
 model work_gid_redirect {
@@ -4498,6 +5023,7 @@ model work_gid_redirect {
   created DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([new_id], map: "work_gid_redirect_idx_new_id")
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4508,6 +5034,7 @@ model work_language {
   created       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([work, language])
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4515,6 +5042,8 @@ model work_meta {
   id           Int  @id
   rating       Int? @db.SmallInt
   rating_count Int?
+
+  @@schema("musicbrainz")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -4524,6 +5053,7 @@ model work_rating_raw {
   rating Int @db.SmallInt
 
   @@id([work, editor])
+  @@schema("musicbrainz")
 }
 
 model work_tag {
@@ -4534,6 +5064,7 @@ model work_tag {
 
   @@id([work, tag])
   @@index([tag], map: "work_tag_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model work_tag_raw {
@@ -4544,6 +5075,7 @@ model work_tag_raw {
 
   @@id([work, editor, tag])
   @@index([tag], map: "work_tag_raw_idx_tag")
+  @@schema("musicbrainz")
 }
 
 model work_type {
@@ -4553,23 +5085,31 @@ model work_type {
   child_order Int     @default(0)
   description String?
   gid         String  @unique(map: "work_type_idx_gid") @db.Uuid
+
+  @@schema("musicbrainz")
 }
 
 enum cover_art_presence {
   absent
   present
   darkened
+
+  @@schema("musicbrainz")
 }
 
 enum edit_note_status {
   deleted
   edited
+
+  @@schema("musicbrainz")
 }
 
 enum event_art_presence {
   absent
   present
   darkened
+
+  @@schema("musicbrainz")
 }
 
 enum fluency {
@@ -4577,11 +5117,15 @@ enum fluency {
   intermediate
   advanced
   native
+
+  @@schema("musicbrainz")
 }
 
 enum oauth_code_challenge_method {
   plain
   S256
+
+  @@schema("musicbrainz")
 }
 
 enum ratable_entity_type {
@@ -4592,6 +5136,8 @@ enum ratable_entity_type {
   recording
   release_group
   work
+
+  @@schema("musicbrainz")
 }
 
 enum taggable_entity_type {
@@ -4606,4 +5152,6 @@ enum taggable_entity_type {
   release_group
   series
   work
+
+  @@schema("musicbrainz")
 }
