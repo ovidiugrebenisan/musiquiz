@@ -30,6 +30,7 @@ export const getArtistData = createTRPCRouter({
           name: input,
         },
       });
+
       if (artistData && artistData.id) {
         const artistReleases = await ctx.prisma.release.findMany({
           where: {
@@ -54,6 +55,7 @@ export const getArtistData = createTRPCRouter({
             const coverId = coverUrlResponse?.id;
             if (coverUrlResponse && coverId) {
             coverArt = "http://coverartarchive.org/release/" + releaseGid + "/" + coverId + "jpg"
+            break
             }
           } catch (error) {
             console.warn(
