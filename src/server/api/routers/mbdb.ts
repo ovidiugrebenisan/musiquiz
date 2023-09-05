@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
-
 export const getArtistData = createTRPCRouter({
   getArtistData: publicProcedure
     .input(z.string())
@@ -44,18 +43,23 @@ export const getArtistData = createTRPCRouter({
 
         for (const release of shuffledReleases) {
           const releaseGid = release.gid;
-          const releaseId = release.id
+          const releaseId = release.id;
 
           try {
             const coverUrlResponse = await ctx.prisma.cover_art.findFirst({
               where: {
                 release: releaseId,
-              }
+              },
             });
             const coverId = coverUrlResponse?.id;
             if (coverUrlResponse && coverId) {
-            coverArt = "http://coverartarchive.org/release/" + releaseGid + "/" + coverId + "jpg"
-            break
+              coverArt =
+                "http://coverartarchive.org/release/" +
+                releaseGid +
+                "/" +
+                coverId +
+                "jpg";
+              break;
             }
           } catch (error) {
             console.warn(
@@ -81,12 +85,39 @@ export const getArtistData = createTRPCRouter({
         select: {
           name: true,
         },
-        distinct: ['name'],
-        take: 5
+        distinct: ["name"],
+        take: 5,
       });
       if (artist) {
         return artist;
       }
       return null;
+    }),
+  artistChosen: publicProcedure
+    .input(z.string())
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.auth.userId) {
+        const user_exists = await ctx.prisma.user_metadata.findUnique({
+          where: {
+            user_id: ctx.auth.userId,
+          },
+        });
+        if (!user_exists) {
+          await ctx.prisma.user_metadata.create({
+            data: {
+              user_id: ctx.auth.userId,
+            },
+          });
+        } else {
+          await ctx.prisma.user_metadata.update({
+            where: {
+              user_id: ctx.auth.userId,
+            },
+            data: {
+              current_artist: input,
+            },
+          });
+        }
+      }
     }),
 });
