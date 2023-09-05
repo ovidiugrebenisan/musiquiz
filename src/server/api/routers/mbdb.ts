@@ -1,26 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { shuffle, getRandomNumber } from "~/utils/functions";
 
 export const getArtistData = createTRPCRouter({
-  getArtistData: publicProcedure
-    .input(z.string())
-    .query(async ({ ctx, input }) => {
-      const artistData = await ctx.prisma.artist.findFirst({
-        where: {
-          name: input,
-        },
-        select: {
-          begin_date_year: true,
-        },
-      });
-
-      if (artistData?.begin_date_year) {
-        return artistData.begin_date_year;
-      }
-
-      return null;
-    }),
-
   getArtistRandomCoverArt: publicProcedure
     .input(z.string())
     .query(async ({ ctx, input }) => {
@@ -93,7 +75,7 @@ export const getArtistData = createTRPCRouter({
       }
       return null;
     }),
-  artistChosen: publicProcedure
+  pushArtist: publicProcedure
     .input(z.string())
     .mutation(async ({ ctx, input }) => {
       if (ctx.auth.userId) {
@@ -108,6 +90,14 @@ export const getArtistData = createTRPCRouter({
               user_id: ctx.auth.userId,
             },
           });
+          await ctx.prisma.user_metadata.update({
+            where: {
+              user_id: ctx.auth.userId,
+            },
+            data: {
+              current_artist: input,
+            },
+          });
         } else {
           await ctx.prisma.user_metadata.update({
             where: {
@@ -118,6 +108,72 @@ export const getArtistData = createTRPCRouter({
             },
           });
         }
+      }
+    }),
+  getChosenArtist: publicProcedure.query(async ({ ctx }) => {
+    if (ctx.auth.userId) {
+      const chosenArtist = await ctx.prisma.user_metadata.findUnique({
+        where: {
+          user_id: ctx.auth.userId,
+        },
+        select: {
+          current_artist: true,
+        },
+      });
+      if (chosenArtist) {
+        return chosenArtist.current_artist;
+      }
+    }
+    return "";
+  }),
+
+  getAnswers: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      try {
+        const albumYearData = await ctx.prisma.artist.findFirst({
+          where: {
+            name: input,
+          },
+          select: {
+            begin_date_year: true,
+          },
+        });
+
+        if (
+          albumYearData &&
+          typeof albumYearData.begin_date_year === "number"
+        ) {
+          const albumYear = albumYearData.begin_date_year;
+          const higher_year = getRandomNumber(
+            albumYear - 1,
+            albumYear + 1,
+            albumYear,
+          );
+          const lower_year = getRandomNumber(
+            albumYear - 2,
+            albumYear - 7,
+            albumYear,
+          );
+          const another_year = getRandomNumber(
+            albumYear + 2,
+            albumYear + 7,
+            albumYear,
+          );
+          const answers: number[] = [
+            albumYear,
+            higher_year,
+            lower_year,
+            another_year,
+          ];
+          const shuffledArray = shuffle(answers);
+          return shuffledArray;
+        } else {
+          return []; // Return empty array if no data or begin_date_year isn't a number
+        }
+      } catch (error) {
+        console.error("Error fetching artist data:", error);
+        throw new Error("Failed to fetch artist data.");
       }
     }),
 });

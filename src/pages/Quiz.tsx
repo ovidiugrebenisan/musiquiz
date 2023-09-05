@@ -1,66 +1,32 @@
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { useAtomValue } from "jotai/react";
-import { artistAtom } from "./Search";
 import { AnswerButton } from "~/components/AnswerButton";
 
 
 
-function getRandomNumber(
-  lowerLimit: number,
-  upperLimit: number,
-  exception: number,
-): number {
-  const range: number = upperLimit - lowerLimit + 1;
-
-  let randomNumber: number = Math.floor(Math.random() * range) + lowerLimit;
-
-  if (randomNumber === exception) {
-    randomNumber = getRandomNumber(lowerLimit, upperLimit, exception);
-  }
-  return randomNumber;
-}
-
-function shuffle<T>(array: T[]): T[] {
-  let currentIndex = array.length;
-  let randomIndex: number;
-  let temporaryValue: T;
-
-  while (currentIndex !== 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    temporaryValue = array[currentIndex] as T;
-    array[currentIndex] = array[randomIndex] as T;
-    array[randomIndex] = temporaryValue;
-  }
-
-  return array;
-}
-
 export default function Quiz() {
-  const artistPicked = useAtomValue(artistAtom);
-  const albumYear = api.mbdb.getArtistData.useQuery(artistPicked, {
-    staleTime: Infinity,
-    retry: false,
-  }).data as number;
+  const {data: artistData, isLoading: artistLoading } = api.mbdb.getChosenArtist.useQuery()
+  const artistPicked = artistData as string
+  const {data: randomCoverArtData, isLoading: coverArtLoading} = api.mbdb.getArtistRandomCoverArt.useQuery(artistPicked, {
+    refetchOnWindowFocus: false,
+    enabled: !!artistPicked
+  })
 
-  const randomCoverArt = api.mbdb.getArtistRandomCoverArt.useQuery(artistPicked, {
-    staleTime: Infinity,
-    retry: false
-  }).data
+  const {data: shuffledArrayData, isLoading: shuffledArrayLoading} = api.mbdb.getAnswers.useQuery(artistPicked, {
+    refetchOnWindowFocus: false,
+    enabled: !!artistPicked
+  })
+  const shuffledArray = shuffledArrayData as number[];
 
+  const isLoading = artistLoading || coverArtLoading || shuffledArrayLoading
 
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
 
-  const higher_year = getRandomNumber(albumYear - 1, albumYear + 1, albumYear);
-  const lower_year = getRandomNumber(albumYear - 2, albumYear - 7, albumYear);
-  const another_year = getRandomNumber(albumYear + 2, albumYear + 7, albumYear);
-
-  const answers: number[] = [albumYear, higher_year, lower_year, another_year];
-  const shuffledArray = shuffle(answers);
   return (
     <div className="relative h-screen w-screen bg-cover saturate-0"
-    style={{backgroundImage: `url(${randomCoverArt})`}}>
+    style={{backgroundImage: `url(${randomCoverArtData})`}}>
       <div className="absolute h-full w-full bg-black bg-opacity-25"> </div>
       <Link
         href="/"
