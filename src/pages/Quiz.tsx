@@ -46,7 +46,7 @@ export default function Quiz() {
       </Link>
       <p
         className="absolute left-1/2 top-1/4 h-[110px] w-[1160px] -translate-x-1/2 -translate-y-1/2
-                  text-center font-metropolis text-[64px] font-black leading-normal text-white"
+                  text-center font-metropolis text-[64px] font-black leading-none text-white"
       >
         In which year was {artistPicked} founded?
       </p>
