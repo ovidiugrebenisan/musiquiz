@@ -3,58 +3,6 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { shuffle, getRandomNumber } from "~/utils/functions";
 
 export const getArtistData = createTRPCRouter({
-  getArtistRandomCoverArt: publicProcedure
-    .input(z.string())
-    .query(async ({ ctx, input }) => {
-      const artistData = await ctx.prisma.artist.findFirst({
-        where: {
-          name: input,
-        },
-      });
-
-      if (artistData && artistData.id) {
-        const artistReleases = await ctx.prisma.release.findMany({
-          where: {
-            artist_credit: artistData.id,
-          },
-        });
-        const shuffledReleases = [...artistReleases].sort(
-          () => Math.random() - 0.5,
-        );
-        let coverArt: string | null = null;
-
-        for (const release of shuffledReleases) {
-          const releaseGid = release.gid;
-          const releaseId = release.id;
-
-          try {
-            const coverUrlResponse = await ctx.prisma.cover_art.findFirst({
-              where: {
-                release: releaseId,
-              },
-            });
-            const coverId = coverUrlResponse?.id;
-            if (coverUrlResponse && coverId) {
-              coverArt =
-                "http://coverartarchive.org/release/" +
-                releaseGid +
-                "/" +
-                coverId +
-                "jpg";
-              break;
-            }
-          } catch (error) {
-            console.warn(
-              "Failed to fetch cover art for release ID:",
-              releaseId,
-            );
-            // Continue to the next iteration
-          }
-        }
-
-        return coverArt;
-      }
-    }),
   getAllArtists: publicProcedure
     .input(z.string())
     .query(async ({ ctx, input }) => {

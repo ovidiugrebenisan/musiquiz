@@ -2,32 +2,26 @@ import { api } from "~/utils/api";
 import Link from "next/link";
 import { AnswerButton } from "~/components/AnswerButton";
 
-
-
 export default function Quiz() {
-  const {data: artistData, isLoading: artistLoading } = api.mbdb.getChosenArtist.useQuery()
-  const artistPicked = artistData as string
-  const {data: randomCoverArtData, isLoading: coverArtLoading} = api.mbdb.getArtistRandomCoverArt.useQuery(artistPicked, {
-    refetchOnWindowFocus: false,
-    enabled: !!artistPicked
-  })
+  const { data: artistData, isLoading: artistLoading } =
+    api.mbdb.getChosenArtist.useQuery();
+  const artistPicked = artistData as string;
 
-  const {data: shuffledArrayData, isLoading: shuffledArrayLoading} = api.mbdb.getAnswers.useQuery(artistPicked, {
-    refetchOnWindowFocus: false,
-    enabled: !!artistPicked
-  })
+  const { data: shuffledArrayData, isLoading: shuffledArrayLoading } =
+    api.mbdb.getAnswers.useQuery(artistPicked, {
+      refetchOnWindowFocus: false,
+      enabled: !!artistPicked,
+    });
   const shuffledArray = shuffledArrayData as number[];
 
-  const isLoading = artistLoading || coverArtLoading || shuffledArrayLoading
+  const isLoading = artistLoading || shuffledArrayLoading;
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="relative h-screen w-screen bg-cover saturate-0"
-    style={{backgroundImage: `url(${randomCoverArtData})`}}>
-      <div className="absolute h-full w-full bg-black bg-opacity-25"> </div>
+    <div className="relative h-screen w-screen bg-quiz bg-cover saturate-0">
       <Link
         href="/"
         className="absolute left-[100px] top-[80px]
