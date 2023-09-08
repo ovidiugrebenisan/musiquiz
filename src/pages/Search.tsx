@@ -19,8 +19,6 @@ export default function Search() {
     void router.push("/Quiz");
   }
 
-  // api.mbdb.pushArtist.useMutation().mutate(chosenArtist.current);
-
 
   const possibleArtists = api.mbdb.getAllArtists.useQuery(searchedArtist).data;
   useEffect(() => {

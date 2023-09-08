@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { shuffle, getRandomNumber } from "~/utils/functions";
+import { whichYear, getChosenArtist, type WhichYear } from "~/utils/functions";
+import { Redis } from "@upstash/redis";
+
+
+const redis = Redis.fromEnv();
 
 export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
@@ -58,70 +62,26 @@ export const getArtistData = createTRPCRouter({
         }
       }
     }),
-  getChosenArtist: publicProcedure.query(async ({ ctx }) => {
+  constructArtistQuiz: publicProcedure.query(async ({ ctx }) => {
+    const quiz = {};
+    const selections = ["whichYear"];
     if (ctx.auth.userId) {
-      const chosenArtist = await ctx.prisma.user_metadata.findUnique({
-        where: {
-          user_id: ctx.auth.userId,
-        },
-        select: {
-          current_artist: true,
-        },
-      });
-      if (chosenArtist) {
-        return chosenArtist.current_artist;
+      const artist = await getChosenArtist(ctx.auth.userId);
+      const quiz_exists = await redis.json.get(ctx.auth.userId) as WhichYear | null;
+      if (!quiz_exists && artist) {
+        for (const selection of selections) {
+          if (selection === "whichYear") {
+            const question_answers = await whichYear(artist);
+            Object.assign(quiz, question_answers);
+          }
+        }
+        const push_quiz = await redis.json.set(ctx.auth.userId, "$", quiz);
+        if (push_quiz) {
+          return;
+        }
+      } else {
+        return quiz_exists;
       }
     }
-    return "";
   }),
-
-  getAnswers: publicProcedure
-    .input(z.string())
-    .query(async ({ ctx, input }) => {
-      try {
-        const albumYearData = await ctx.prisma.artist.findFirst({
-          where: {
-            name: input,
-          },
-          select: {
-            begin_date_year: true,
-          },
-        });
-
-        if (
-          albumYearData &&
-          typeof albumYearData.begin_date_year === "number"
-        ) {
-          const albumYear = albumYearData.begin_date_year;
-          const higher_year = getRandomNumber(
-            albumYear - 1,
-            albumYear + 1,
-            albumYear,
-          );
-          const lower_year = getRandomNumber(
-            albumYear - 2,
-            albumYear - 7,
-            albumYear,
-          );
-          const another_year = getRandomNumber(
-            albumYear + 2,
-            albumYear + 7,
-            albumYear,
-          );
-          const answers: number[] = [
-            albumYear,
-            higher_year,
-            lower_year,
-            another_year,
-          ];
-          const shuffledArray = shuffle(answers);
-          return shuffledArray;
-        } else {
-          return []; // Return empty array if no data or begin_date_year isn't a number
-        }
-      } catch (error) {
-        console.error("Error fetching artist data:", error);
-        throw new Error("Failed to fetch artist data.");
-      }
-    }),
 });

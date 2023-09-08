@@ -3,26 +3,18 @@ import Link from "next/link";
 import { AnswerButton } from "~/components/AnswerButton";
 
 export default function Quiz() {
-  const { data: artistData, isLoading: artistLoading } =
-    api.mbdb.getChosenArtist.useQuery();
-  const artistPicked = artistData as string;
+  const quiz = api.mbdb.constructArtistQuiz.useQuery();
 
-  const { data: shuffledArrayData, isLoading: shuffledArrayLoading } =
-    api.mbdb.getAnswers.useQuery(artistPicked, {
-      refetchOnWindowFocus: false,
-      enabled: !!artistPicked,
-    });
-  const shuffledArray = shuffledArrayData as number[];
+  const artistPicked = quiz.data?.question as string;
+  const shuffledArray = quiz.data?.answers as number[];
 
-  const isLoading = artistLoading || shuffledArrayLoading;
-
-  if (isLoading) {
-    return <div>Loading...</div>;
+  if (quiz.isLoading) {
+    return <div>Loading...</div>
   }
 
   return (
-    <div className="relative h-screen w-screen bg-gradient-to-t from-black to-20% to-white ">
-      <div className="absolute w-full h-full bg-black opacity-80"></div>
+    <div className="relative h-screen w-screen bg-gradient-to-t from-black to-white to-20% ">
+      <div className="absolute h-full w-full bg-black opacity-80"></div>
       <Link
         href="/"
         className="absolute left-[100px] top-[80px]

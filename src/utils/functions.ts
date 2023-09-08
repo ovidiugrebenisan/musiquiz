@@ -1,31 +1,70 @@
-export function getRandomNumber(
-    lowerLimit: number,
-    upperLimit: number,
-    exception: number,
-  ): number {
-    const range: number = upperLimit - lowerLimit + 1;
+import { prisma } from "~/server/db";
+import { shuffleArray, getRandomNumber } from "./helper_functions";
+
+export type WhichYear = {
+  question: string;
+  answers: number[]
+} | null
+
+  export async function whichYear(input: string): Promise<WhichYear> {
+    try {
+      const albumYearData = await prisma.artist.findFirst({
+        where: {
+          name: input,
+        },
+        select: {
+          begin_date_year: true,
+        },
+      });
   
-    let randomNumber: number = Math.floor(Math.random() * range) + lowerLimit;
-  
-    if (randomNumber === exception) {
-      randomNumber = getRandomNumber(lowerLimit, upperLimit, exception);
+      if (albumYearData && typeof albumYearData.begin_date_year === "number") {
+        const albumYear = albumYearData.begin_date_year;
+        const higher_year = getRandomNumber(
+          albumYear - 1,
+          albumYear + 1,
+          albumYear,
+        );
+        const lower_year = getRandomNumber(
+          albumYear - 2,
+          albumYear - 7,
+          albumYear,
+        );
+        const another_year = getRandomNumber(
+          albumYear + 2,
+          albumYear + 7,
+          albumYear,
+        );
+        const answers: number[] = [
+          albumYear,
+          higher_year,
+          lower_year,
+          another_year,
+        ];
+        const shuffledArray = shuffleArray(answers);
+        const question = `In which year was ${input} born/founded?`;
+        const response = { question: question, answers: shuffledArray 
+        };
+        return response;
+      } else {
+        return null; // Return empty array if no data or begin_date_year isn't a number
+      }
+    } catch (error) {
+      console.error("Error fetching artist data:", error);
+      throw new Error("Failed to fetch artist data.");
     }
-    return randomNumber;
   }
-  
- export  function shuffle<T>(array: T[]): T[] {
-    let currentIndex = array.length;
-    let randomIndex: number;
-    let temporaryValue: T;
-  
-    while (currentIndex !== 0) {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-  
-      temporaryValue = array[currentIndex] as T;
-      array[currentIndex] = array[randomIndex] as T;
-      array[randomIndex] = temporaryValue;
+
+export async function getChosenArtist(userId: string) {
+  const artist = await prisma.user_metadata.findUnique({
+    where: {
+      user_id: userId
+    },
+    select: {
+      current_artist: true
     }
-  
-    return array;
+  })
+  if (artist && artist.current_artist) {
+    return artist.current_artist
   }
+  return null
+}
