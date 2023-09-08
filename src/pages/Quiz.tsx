@@ -21,7 +21,8 @@ export default function Quiz() {
   }
 
   return (
-    <div className="relative h-screen w-screen bg-quiz bg-cover saturate-0">
+    <div className="relative h-screen w-screen bg-gradient-to-t from-black to-20% to-white ">
+      <div className="absolute w-full h-full bg-black opacity-80"></div>
       <Link
         href="/"
         className="absolute left-[100px] top-[80px]
