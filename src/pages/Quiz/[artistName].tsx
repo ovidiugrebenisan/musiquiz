@@ -1,16 +1,32 @@
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { AnswerButton } from "~/components/AnswerButton";
+import { useRouter } from "next/router";
 
-export default function Quiz() {
-  const quiz = api.mbdb.constructArtistQuiz.useQuery();
 
-  const artistPicked = quiz.data?.question as string;
-  const shuffledArray = quiz.data?.answers as number[];
 
-  if (quiz.isLoading) {
+
+export default  function Quiz() {
+  const router = useRouter();
+  const { artistName } = router.query;
+  if (!artistName || Array.isArray(artistName)) {
     return <div>Loading...</div>
   }
+  const quiz = api.mbdb.constructArtistQuiz.useQuery(artistName)
+
+  console.log(quiz)
+
+  if (quiz.isFetching || quiz.isLoading ) {
+    return <div>Loading...</div>;
+}
+
+  const artistPicked = quiz.data?.question as string;
+  const shuffledArray = quiz.data?.answers as number[]
+  const correctAnswer = quiz.data?.correct_answer as number
+
+
+
+
 
   return (
     <div className="relative h-screen w-screen bg-gradient-to-t from-black to-white to-20% ">
@@ -43,10 +59,22 @@ export default function Quiz() {
         In which year was {artistPicked} founded?
       </p>
       <div className=" absolute bottom-1/4 left-1/2 flex h-[320px] w-[800px] -translate-x-1/2 -translate-y-1/2 flex-col gap-[15px]">
-        <AnswerButton answer={shuffledArray[0] as number} />
-        <AnswerButton answer={shuffledArray[1] as number} />
-        <AnswerButton answer={shuffledArray[2] as number} />
-        <AnswerButton answer={shuffledArray[3] as number} />
+        <AnswerButton
+          option={shuffledArray[0] as number}
+          correct={correctAnswer}
+        />
+        <AnswerButton
+          option={shuffledArray[1] as number}
+          correct={correctAnswer}
+        />
+        <AnswerButton
+          option={shuffledArray[2] as number}
+          correct={correctAnswer}
+        />
+        <AnswerButton
+          option={shuffledArray[3] as number}
+          correct={correctAnswer}
+        />
       </div>
     </div>
   );

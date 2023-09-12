@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { whichYear, getChosenArtist, type WhichYear } from "~/utils/functions";
+import {
+  whichYear,
+  type WhichYear,
+} from "~/utils/quiz_artist_functions";
 import { Redis } from "@upstash/redis";
-
 
 const redis = Redis.fromEnv();
 
@@ -27,57 +29,31 @@ export const getArtistData = createTRPCRouter({
       }
       return null;
     }),
-  pushArtist: publicProcedure
-    .input(z.string())
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.auth.userId) {
-        const user_exists = await ctx.prisma.user_metadata.findUnique({
-          where: {
-            user_id: ctx.auth.userId,
-          },
-        });
-        if (!user_exists) {
-          await ctx.prisma.user_metadata.create({
-            data: {
-              user_id: ctx.auth.userId,
-            },
-          });
-          await ctx.prisma.user_metadata.update({
-            where: {
-              user_id: ctx.auth.userId,
-            },
-            data: {
-              current_artist: input,
-            },
-          });
-        } else {
-          await ctx.prisma.user_metadata.update({
-            where: {
-              user_id: ctx.auth.userId,
-            },
-            data: {
-              current_artist: input,
-            },
-          });
-        }
-      }
-    }),
-  constructArtistQuiz: publicProcedure.query(async ({ ctx }) => {
+  constructArtistQuiz: publicProcedure
+  .input(z.string())
+  .query(async ({ ctx, input }) => {
     const quiz = {};
     const selections = ["whichYear"];
+    let question_answers 
     if (ctx.auth.userId) {
-      const artist = await getChosenArtist(ctx.auth.userId);
-      const quiz_exists = await redis.json.get(ctx.auth.userId) as WhichYear | null;
-      if (!quiz_exists && artist) {
+      const quiz_exists = (await redis.json.get(
+        ctx.auth.userId,
+      )) as WhichYear | null;
+
+      if (!quiz_exists) {
+        console.log("Quiz  does not exist")
         for (const selection of selections) {
           if (selection === "whichYear") {
-            const question_answers = await whichYear(artist);
+            question_answers = await whichYear(input);
+            console.log(question_answers)
             Object.assign(quiz, question_answers);
           }
         }
         const push_quiz = await redis.json.set(ctx.auth.userId, "$", quiz);
-        if (push_quiz) {
-          return;
+        console.log(push_quiz)
+        await redis.expire(ctx.auth.userId, 60)
+        if (push_quiz) {         
+          return question_answers;
         }
       } else {
         return quiz_exists;
