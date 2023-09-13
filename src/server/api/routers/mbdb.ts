@@ -41,16 +41,13 @@ export const getArtistData = createTRPCRouter({
       )) as WhichYear | null;
 
       if (!quiz_exists) {
-        console.log("Quiz  does not exist")
         for (const selection of selections) {
           if (selection === "whichYear") {
             question_answers = await whichYear(input);
-            console.log(question_answers)
             Object.assign(quiz, question_answers);
           }
         }
         const push_quiz = await redis.json.set(ctx.auth.userId, "$", quiz);
-        console.log(push_quiz)
         await redis.expire(ctx.auth.userId, 60)
         if (push_quiz) {         
           return question_answers;

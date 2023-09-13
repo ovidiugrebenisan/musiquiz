@@ -9,9 +9,21 @@ export default function Search() {
   const [artistlist, setArtistList] = useState<{ name: string }[] | null>();
   const router = useRouter();
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const href = "/Quiz/" + inputValue;
+    // Get the input element from the form
+    const inputElement = e.currentTarget.elements.namedItem(
+      "artist",
+    ) as HTMLInputElement;
+
+    // Get the value from the input element
+    let currentInputValue = inputElement?.value || "";
+
+    // If the inputValue state has a different value, use that
+    if (currentInputValue !== inputValue) {
+      currentInputValue = inputValue;
+    }
+    const href = "/Quiz/" + currentInputValue;
     void router.push(href);
   }
 
@@ -47,7 +59,7 @@ export default function Search() {
               placeholder:text-[#C2C2C2]"
               placeholder="Type artist name in here..."
             ></Combobox.Input>
-            <Combobox.Button
+            <button
               type="submit"
               className=" 
           line-normal h-[4.9375rem]  w-[20.5625rem] flex-none items-center
@@ -55,14 +67,21 @@ export default function Search() {
           text-black"
             >
               Search
-            </Combobox.Button>
+            </button>
 
-            <Combobox.Options className="justify-center bg-[#4E4545]">
+            <Combobox.Options
+              className="h-[23.875rem] w-[49rem] justify-center
+            bg-[#4E4545]"
+            >
               {artistlist?.map((person) => (
                 <Combobox.Option
+                  className="pt-[2.12rem] font-metropolis text-[2.33rem]
+                  font-medium leading-none text-white"
                   key={person.name}
                   value={person.name}
-                  onSelect={() => setInputValue(person.name)}
+                  onSelect={() => {
+                    setInputValue(person.name);
+                  }}
                 >
                   {person.name}
                 </Combobox.Option>
