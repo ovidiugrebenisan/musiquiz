@@ -9,7 +9,9 @@ export default function Quiz() {
   if (!artistName || Array.isArray(artistName)) {
     return <div>Loading...</div>;
   }
-  const quiz = api.mbdb.constructArtistQuiz.useQuery(artistName);
+  const quiz = api.mbdb.constructArtistQuiz.useQuery(artistName, {
+    refetchOnWindowFocus: false
+  });
 
   if (quiz.isFetching || quiz.isLoading) {
     return <div>Loading...</div>;
