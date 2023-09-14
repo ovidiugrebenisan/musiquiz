@@ -16,17 +16,17 @@ export function shuffleArray<T>(array: T[]): T[] {
   return array;
 }
 
-export function generateAnswers(base: number): number[] {
+export function generateAnswers(correct_answer: number): number[] {
   const answers: number[] = [];
   let random = 0;
-    const min = base - 6
-    const max = base + 6
+    const min = correct_answer - 5
+    const max = correct_answer + 5
   while (answers.length < 3) {
     const delta = Math.round(Math.random());
     if (delta === 0) {
-      random = Math.round(Math.random() * Math.floor(base - min ) + min);
+      random = Math.floor(Math.random() * (correct_answer - min ) + min);
     } else {
-      random = Math.round(Math.random() * (max - base ) + base)
+      random = Math.ceil(Math.random() * (max - correct_answer ) + correct_answer)
     }
     if (answers.includes(random)) {
       continue;
@@ -34,6 +34,6 @@ export function generateAnswers(base: number): number[] {
     answers.push(random);
   }
   console.log(answers)
-  answers.push(base)
+  answers.push(correct_answer)
   return answers;
 }
