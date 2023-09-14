@@ -1,5 +1,5 @@
 import { prisma } from "~/server/db";
-import { shuffleArray, getRandomNumber } from "./helper_functions";
+import { shuffleArray, generateAnswers } from "./helper_functions";
 
 export type WhichYear = {
   question: string;
@@ -20,27 +20,7 @@ export async function whichYear(input: string): Promise<WhichYear> {
 
     if (albumYearData && typeof albumYearData.begin_date_year === "number") {
       const albumYear = albumYearData.begin_date_year;
-      const higher_year = getRandomNumber(
-        albumYear - 1,
-        albumYear + 1,
-        albumYear,
-      );
-      const lower_year = getRandomNumber(
-        albumYear - 2,
-        albumYear - 7,
-        albumYear,
-      );
-      const another_year = getRandomNumber(
-        albumYear + 2,
-        albumYear + 7,
-        albumYear,
-      );
-      const answers: number[] = [
-        albumYear,
-        higher_year,
-        lower_year,
-        another_year,
-      ];
+      const answers = generateAnswers(albumYear)
       const shuffledArray = shuffleArray(answers);
       const question = `In which year was ${input} born/founded?`;
       const response = { question: question, answers: shuffledArray, correct_answer: albumYear };
