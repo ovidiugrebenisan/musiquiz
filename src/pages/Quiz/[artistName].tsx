@@ -17,9 +17,9 @@ export default function Quiz() {
     return <div>Loading...</div>;
   }
 
-  const artistPicked = quiz.data?.question as string;
-  const shuffledArray = quiz.data?.answers as number[];
-  const correctAnswer = quiz.data?.correct_answer as number;
+  const artistPicked = quiz.data?.whichAlbum?.question as string
+  const answers = quiz.data?.whichAlbum?.answers as number[] | string[]
+  const correctAnswer = quiz.data?.whichAlbum?.correct_answer as number | string
 
   return (
     <div className="relative h-screen w-screen bg-gradient-to-t from-black to-white to-20% ">
@@ -53,19 +53,19 @@ export default function Quiz() {
       </p>
       <div className=" absolute bottom-1/4 left-1/2 flex h-[320px] w-[800px] -translate-x-1/2 -translate-y-1/2 flex-col gap-[15px]">
         <AnswerButton
-          option={shuffledArray[0] as number}
+          option={answers[0] as number | string }
           correct={correctAnswer}
         />
         <AnswerButton
-          option={shuffledArray[1] as number}
+          option={answers[1] as number | string}
           correct={correctAnswer}
         />
         <AnswerButton
-          option={shuffledArray[2] as number}
+          option={answers[2] as number | string }
           correct={correctAnswer}
         />
         <AnswerButton
-          option={shuffledArray[3] as number}
+          option={answers[3] as number | string}
           correct={correctAnswer}
         />
       </div>

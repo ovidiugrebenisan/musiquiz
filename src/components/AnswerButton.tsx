@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 interface AnswerButtonProps {
-  option: number;
-  correct: number;
+  option: number | string;
+  correct: number | string;
 }
 
 export function AnswerButton(props: AnswerButtonProps) {

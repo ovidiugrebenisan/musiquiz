@@ -1,10 +1,17 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
-  whichYear,
+  type WhichAlbum,
   type WhichYear,
+  whichAlbum,
+  whichYear,
 } from "~/utils/quiz_artist_functions";
 import { Redis } from "@upstash/redis";
+
+type Quiz = {
+  whichYear?: WhichYear;
+  whichAlbum?: WhichAlbum
+}
 
 const redis = Redis.fromEnv();
 
@@ -32,19 +39,20 @@ export const getArtistData = createTRPCRouter({
   constructArtistQuiz: publicProcedure
   .input(z.string())
   .query(async ({ ctx, input }) => {
-    const quiz = {};
-    const selections = ["whichYear"];
+    const quiz: Quiz = {};
+    const selections = ["whichYear", "whichAlbum"];
     let question_answers 
     if (ctx.auth.userId) {
       const quiz_exists = (await redis.json.get(
         ctx.auth.userId,
-      )) as WhichYear | null;
+      )) as Quiz
 
       if (!quiz_exists) {
         for (const selection of selections) {
           if (selection === "whichYear") {
-            question_answers = await whichYear(input);
-            Object.assign(quiz, question_answers);
+            quiz.whichYear = await whichYear(input)
+          } else if (selection === "whichAlbum") {
+            quiz.whichAlbum = await whichAlbum(input)
           }
         }
         const push_quiz = await redis.json.set(ctx.auth.userId, "$", quiz);
