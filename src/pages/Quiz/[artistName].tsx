@@ -13,7 +13,7 @@ export default function Quiz() {
     refetchOnWindowFocus: false
   });
 
-  if (quiz.isFetching || quiz.isLoading) {
+  if (quiz.isFetching || quiz.isLoading ) {
     return <div>Loading...</div>;
   }
 

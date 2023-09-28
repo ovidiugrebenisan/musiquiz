@@ -41,7 +41,7 @@ export const getArtistData = createTRPCRouter({
   .query(async ({ ctx, input }) => {
     const quiz: Quiz = {};
     const selections = ["whichYear", "whichAlbum"];
-    let question_answers 
+
     if (ctx.auth.userId) {
       const quiz_exists = (await redis.json.get(
         ctx.auth.userId,
@@ -56,9 +56,9 @@ export const getArtistData = createTRPCRouter({
           }
         }
         const push_quiz = await redis.json.set(ctx.auth.userId, "$", quiz);
-        await redis.expire(ctx.auth.userId, 60)
+        await redis.expire(ctx.auth.userId, 10)
         if (push_quiz) {         
-          return question_answers;
+          return quiz;
         }
       } else {
         return quiz_exists;

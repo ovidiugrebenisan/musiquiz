@@ -17,7 +17,6 @@ export type WhichAlbum = {
 //   return new Promise(resolve => setTimeout(resolve, ms));
 // }
 
-
 export async function whichYear(input: string): Promise<WhichYear> {
   try {
     const albumYearData = await prisma.artist.findFirst({
@@ -78,15 +77,16 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
               release_group: studioAlbum.id,
             },
           });
-        console.log(isNotStudio)
         if (isNotStudio) {
           continue;
         } else {
-          studioAlbums.push(studioAlbum.name);
+          studioAlbums.push(studioAlbum);
         }
       }
-      const chosenAlbum =
-        studioAlbums[Math.floor(Math.random() * studioAlbums.length)] as string;
+      const chosenAlbum = studioAlbums[
+        Math.floor(Math.random() * studioAlbums.length)
+      ] as { id: number; name: string };
+
       const artistGenre = await prisma.artist_tag.findFirst({
         where: {
           artist: artistID.id,
@@ -99,41 +99,69 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
         },
       });
 
-      const otherAlbums = await prisma.release_group_tag.findMany({
+      const chosenAlbumYear = await prisma.release_group_meta.findFirst({
+        where: {
+          id: chosenAlbum.id,
+        },
+        select: {
+          first_release_date_year: true,
+        },
+      });
+
+      const otherAlbumsGenre = await prisma.release_group_tag.findMany({
         where: {
           tag: artistGenre?.tag,
           release_group: {
-            not: artistID.id,
+            not: chosenAlbum.id,
           },
-        },
-        take: 3,
-        orderBy: {
-          count: "desc",
         },
         select: {
           release_group: true,
         },
       });
-      const finalAlbums: string[] = [];
-      for (const otherAlbum of otherAlbums) {
-        const albumName = await prisma.release_group.findFirst({
+
+      const otherAlbumsYear = await prisma.release_group_meta.findMany({
+        where: {
+          first_release_date_year: chosenAlbumYear?.first_release_date_year,
+          id: {
+            not: chosenAlbum.id,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+      const answerAlbums: string[] = [];
+      const otherAlbumsYearValues = otherAlbumsYear.map((rg) => rg.id);
+      const otherAlbumsGenreValues = otherAlbumsGenre.map(
+        (rg) => rg.release_group,
+      );
+      const otherAlbumsGenreSet = new Set(otherAlbumsGenreValues);
+      const finalAlbums = otherAlbumsYearValues.filter((album) =>
+        otherAlbumsGenreSet.has(album),
+      );
+      const randomAlbums = shuffleArray(finalAlbums);
+      const finalRandomAlbums = randomAlbums.slice(0, 3);
+      for (const randomAlbum of finalRandomAlbums) {
+        const album = await prisma.release_group.findFirst({
           where: {
-            id: otherAlbum.release_group,
+            id: randomAlbum,
           },
           select: {
             name: true,
           },
         });
-        if (albumName) {
-          finalAlbums.push(albumName.name);
+        if (album) {
+          answerAlbums.push(album.name);
         }
       }
-      finalAlbums.push(chosenAlbum);
-      const question = `Which of these albums belong to ${input}?`;
+
+      answerAlbums.push(chosenAlbum.name);
+      const question = `Which of these albums belongs to ${input}?`;
       const response = {
         question: question,
-        answers: finalAlbums,
-        correct_answer: chosenAlbum,
+        answers: answerAlbums,
+        correct_answer: chosenAlbum.name,
       };
       return response;
     } else {
