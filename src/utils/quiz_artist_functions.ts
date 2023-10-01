@@ -131,7 +131,7 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
           id: true,
         },
       });
-      const answerAlbums: string[] = [];
+      let answerAlbums: string[] = [];
       const otherAlbumsYearValues = otherAlbumsYear.map((rg) => rg.id);
       const otherAlbumsGenreValues = otherAlbumsGenre.map(
         (rg) => rg.release_group,
@@ -142,6 +142,7 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
       );
       const randomAlbums = shuffleArray(finalAlbums);
       const finalRandomAlbums = randomAlbums.slice(0, 3);
+
       for (const randomAlbum of finalRandomAlbums) {
         const album = await prisma.release_group.findFirst({
           where: {
@@ -154,6 +155,7 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
         if (album) {
           answerAlbums.push(album.name);
         }
+        answerAlbums = shuffleArray(answerAlbums)
       }
 
       answerAlbums.push(chosenAlbum.name);

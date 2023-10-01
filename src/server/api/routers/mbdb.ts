@@ -7,13 +7,20 @@ import {
   whichYear,
 } from "~/utils/quiz_artist_functions";
 import { Redis } from "@upstash/redis";
+import { shuffleArray } from "~/utils/helper_functions";
 
-type Quiz = {
-  whichYear?: WhichYear;
-  whichAlbum?: WhichAlbum
-}
+type QuizItem = WhichYear | WhichAlbum
+
+type Quiz = QuizItem[]
+
+
 
 const redis = Redis.fromEnv();
+
+const quizGenerator: Record<string, (input: string) => Promise<WhichYear | WhichAlbum | null>> = {
+  whichYear,
+  whichAlbum
+}
 
 export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
@@ -39,8 +46,8 @@ export const getArtistData = createTRPCRouter({
   constructArtistQuiz: publicProcedure
   .input(z.string())
   .query(async ({ ctx, input }) => {
-    const quiz: Quiz = {};
-    const selections = ["whichYear", "whichAlbum"];
+    const quiz: Quiz = [];
+    try {
 
     if (ctx.auth.userId) {
       const quiz_exists = (await redis.json.get(
@@ -48,21 +55,30 @@ export const getArtistData = createTRPCRouter({
       )) as Quiz
 
       if (!quiz_exists) {
-        for (const selection of selections) {
-          if (selection === "whichYear") {
-            quiz.whichYear = await whichYear(input)
-          } else if (selection === "whichAlbum") {
-            quiz.whichAlbum = await whichAlbum(input)
-          }
+        for (const [quizType, generator] of Object.entries(quizGenerator)) {
+          if (!quiz.some(q => q?.question === quizType)) {
+            const newQuizItem = await generator(input)
+            if (newQuizItem) {
+              quiz.push(newQuizItem)
+            }
+          } 
+          
         }
-        const push_quiz = await redis.json.set(ctx.auth.userId, "$", quiz);
-        await redis.expire(ctx.auth.userId, 10)
+        shuffleArray(quiz)
+        const push_quiz = await redis.json.set(ctx.auth.userId, "$", JSON.stringify(quiz));
+        await redis.expire(ctx.auth.userId, 60)
         if (push_quiz) {         
           return quiz;
+        } else {
+          throw new Error("Failed to save quiz to Redis.")
         }
       } else {
         return quiz_exists;
       }
     }
+  } catch (error) {
+    console.error(error);
+    throw new Error('An error occured while constructing the quiz.')
+  }
   }),
 });

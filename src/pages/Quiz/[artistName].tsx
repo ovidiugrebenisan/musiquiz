@@ -2,8 +2,11 @@ import { api } from "~/utils/api";
 import Link from "next/link";
 import { AnswerButton } from "~/components/AnswerButton";
 import { useRouter } from "next/router";
+import {useState} from "react"
 
 export default function Quiz() {
+  const [questionNumber, setQuestionNumber] = useState(0)
+  const [isAnswerSelected, setIsAnswerSelected] = useState(false)
   const router = useRouter();
   const { artistName } = router.query;
   if (!artistName || Array.isArray(artistName)) {
@@ -17,9 +20,25 @@ export default function Quiz() {
     return <div>Loading...</div>;
   }
 
-  const artistPicked = quiz.data?.whichAlbum?.question as string
-  const answers = quiz.data?.whichAlbum?.answers as number[] | string[]
-  const correctAnswer = quiz.data?.whichAlbum?.correct_answer as number | string
+  if (!quiz.data || questionNumber >= quiz.data.length) {
+    return <div>Done!</div>;
+  }
+
+  const quizData = quiz.data[questionNumber]
+
+
+  const artistPicked = quizData?.question 
+  const answers = quizData?.answers as number[] | string[]
+  const correctAnswer = quizData?.correct_answer as number | string
+
+  const handleAnswerSelected = () => {
+    setIsAnswerSelected(true)
+  }
+
+  const handleNext = () => {
+    setIsAnswerSelected(false)
+    setQuestionNumber((prev) => prev + 1)
+  }
 
   return (
     <div className="relative h-screen w-screen bg-gradient-to-t from-black to-white to-20% ">
@@ -55,18 +74,30 @@ export default function Quiz() {
         <AnswerButton
           option={answers[0] as number | string }
           correct={correctAnswer}
+          onAnswerSelected={handleAnswerSelected}
+          onProceedToNext={handleNext}
+          disabled={isAnswerSelected}
         />
         <AnswerButton
           option={answers[1] as number | string}
           correct={correctAnswer}
+          onAnswerSelected={handleAnswerSelected}
+          onProceedToNext={handleNext}
+          disabled={isAnswerSelected}
         />
         <AnswerButton
           option={answers[2] as number | string }
           correct={correctAnswer}
+          onAnswerSelected={handleAnswerSelected}
+          onProceedToNext={handleNext}
+          disabled={isAnswerSelected}
         />
         <AnswerButton
           option={answers[3] as number | string}
           correct={correctAnswer}
+          onAnswerSelected={handleAnswerSelected}
+          onProceedToNext={handleNext}
+          disabled={isAnswerSelected}
         />
       </div>
     </div>
