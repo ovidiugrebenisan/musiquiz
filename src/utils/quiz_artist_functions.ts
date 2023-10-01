@@ -155,10 +155,11 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
         if (album) {
           answerAlbums.push(album.name);
         }
-        answerAlbums = shuffleArray(answerAlbums)
+        
       }
 
       answerAlbums.push(chosenAlbum.name);
+      answerAlbums = shuffleArray(answerAlbums)
       const question = `Which of these albums belongs to ${input}?`;
       const response = {
         question: question,

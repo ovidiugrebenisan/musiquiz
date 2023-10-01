@@ -21,7 +21,7 @@ export default function Quiz() {
   }
 
   if (!quiz.data || questionNumber >= quiz.data.length) {
-    return <div>Done!</div>;
+    return <Link href="/Search">Back to Search</Link>;
   }
 
   const quizData = quiz.data[questionNumber]
