@@ -1,5 +1,6 @@
 import { prisma } from "~/server/db";
-import { shuffleArray, generateAnswers } from "./helper_functions";
+import { shuffleArray, generateAnswerswhichYear } from "./helper_functions";
+
 
 export type WhichYear = {
   question: string;
@@ -13,9 +14,6 @@ export type WhichAlbum = {
   correct_answer: string;
 } | null;
 
-// function sleep(ms: number) {
-//   return new Promise(resolve => setTimeout(resolve, ms));
-// }
 
 export async function whichYear(input: string): Promise<WhichYear> {
   try {
@@ -30,7 +28,7 @@ export async function whichYear(input: string): Promise<WhichYear> {
 
     if (albumYearData && typeof albumYearData.begin_date_year === "number") {
       const albumYear = albumYearData.begin_date_year;
-      const answers = generateAnswers(albumYear);
+      const answers = generateAnswerswhichYear(albumYear);
       const shuffledArray = shuffleArray(answers);
       const question = `In which year was ${input} born/founded?`;
       const response = {
@@ -175,3 +173,4 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
     throw new Error("Failed to fetch artist data.");
   }
 }
+

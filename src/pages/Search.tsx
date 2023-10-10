@@ -10,8 +10,7 @@ export default function Search() {
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    const href = "/Quiz/" + searchedArtist;
-    void router.push(href);
+    void router.push("/SearchResults/" + searchedArtist);
   }
 
   const possibleArtists = api.mbdb.getAllArtists.useQuery(searchedArtist, {
@@ -19,8 +18,7 @@ export default function Search() {
   }).data;
 
   return (
-    <div className="relative h-screen w-screen bg-gradient-to-t from-black to-white to-20%">
-      <div className="absolute h-full w-full bg-black opacity-80"></div>
+<>
       <p
         className="font-metropolist absolute left-1/3  top-[29.06rem] h-[6.75rem] w-[72.375rem]
       text-center text-[4rem] font-black leading-none text-white"
@@ -72,6 +70,6 @@ export default function Search() {
           </Combobox>
         </form>
       </div>
-    </div>
+    </>
   );
 }

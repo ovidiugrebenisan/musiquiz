@@ -16,7 +16,7 @@ export function shuffleArray<T>(array: T[]): T[] {
   return array;
 }
 
-export function generateAnswers(correct_answer: number): number[] {
+export function generateAnswerswhichYear(correct_answer: number): number[] {
   const answers: number[] = [];
   let random = 0;
     const min = correct_answer - 5
@@ -36,4 +36,9 @@ export function generateAnswers(correct_answer: number): number[] {
   console.log(answers)
   answers.push(correct_answer)
   return answers;
+}
+
+
+export function randomNumber(upperLimit: number): number {
+  return Math.floor(Math.random() * upperLimit)
 }

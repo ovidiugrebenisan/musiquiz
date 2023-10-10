@@ -18,6 +18,10 @@ const config = {
     locales: ["en"],
     defaultLocale: "en",
   },
+
+  images: {
+    domains: ["assets.fanart.tv"],
+  },
 };
 
 export default config;
