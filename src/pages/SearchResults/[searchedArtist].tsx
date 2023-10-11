@@ -33,14 +33,15 @@ export default function SearchResults() {
         text-center font-metropolis text-[4rem] font-black leading-none text-white">Here is what we found based on your search:</p>
 
         <div className="absolute top-[25rem] left-[30rem]  right-[30rem]
-         flex flex-wrap justify-center gap-y-20 gap-x-20">
+         flex flex-wrap justify-evenly gap-y-20 gap-x-20">
             {responseData.map((result) => (
                 <SearchResult 
                     key={result.artistID} 
                     artistID={result.artistID}
-                    country={result.countryCode}  // Adjust prop name as needed
-                    description={result.comment}  // Adjust prop name as needed
+                    country={result.countryCode}  
+                    description={result.comment} 
                     imageURL={result.imageURL}
+                    artistName={searchedArtist}
                 />
             ))}
         </div>
