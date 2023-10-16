@@ -8,6 +8,7 @@ interface SearchResultType {
     imageURL: string;
     comment: string;
     countryCode: string;
+    country: string;
 }
  
 export default function SearchResults() {
@@ -30,7 +31,7 @@ export default function SearchResults() {
     return (
         <>
         <p className="absolute left-1/2 top-[15rem] h-[110px] w-[1160px] -translate-x-1/2 -translate-y-1/2
-        text-center font-metropolis text-[4rem] font-black leading-none text-white">Here is what we found based on your search:</p>
+        text-center font-metropolis text-[4rem] font-black leading-none text-white">Here is what we found based on your search: {searchedArtist}</p>
 
         <div className="absolute top-[25rem] left-[30rem]  right-[30rem]
          flex flex-wrap justify-evenly gap-y-20 gap-x-20">
@@ -38,10 +39,12 @@ export default function SearchResults() {
                 <SearchResult 
                     key={result.artistID} 
                     artistID={result.artistID}
-                    country={result.countryCode}  
+                    countryCode={result.countryCode}  
                     description={result.comment} 
                     imageURL={result.imageURL}
                     artistName={searchedArtist}
+                    countryName={result.country}
+
                 />
             ))}
         </div>

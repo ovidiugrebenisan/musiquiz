@@ -78,6 +78,7 @@ export const getArtistData = createTRPCRouter({
       let countryCode: string | undefined = "";
       let comment: string | undefined = "";
       let imageURL: string | null  = "";
+      let country: string | null = "";
 
       if (artistData?.area) {
         const artistCountry = await ctx.prisma.area.findFirst({
@@ -89,6 +90,7 @@ export const getArtistData = createTRPCRouter({
           },
         });
         if (artistCountry) {
+          country = artistCountry.name
            countryCode = countries.getAlpha2Code(artistCountry.name, 'en')
         }
       }
@@ -103,6 +105,7 @@ export const getArtistData = createTRPCRouter({
         imageURL,
         comment,
         countryCode,
+        country,
       }
       response.push(searchResult)
       }}
