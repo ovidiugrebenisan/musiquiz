@@ -19,7 +19,7 @@ export function SearchResult(props: SearchResultsProps) {
     imageUrl = "/default.png";
   }
   return (
-    <button onClick={() => router.push("/Quiz?artistID=" + props.artistID + "&artistName=" + props.artistName)} className="group relative h-[322px] w-[640px] bg-cover ">
+    <button onClick={() => void router.push("/Quiz?artistID=" + props.artistID + "&artistName=" + props.artistName)} className="group relative h-[322px] w-[640px] bg-cover ">
       <Image
         src={imageUrl}
         fill={true}
