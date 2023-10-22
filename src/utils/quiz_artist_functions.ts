@@ -15,11 +15,11 @@ export type WhichAlbum = {
 } | null;
 
 
-export async function whichYear(input: string): Promise<WhichYear> {
+export async function whichYear(artistID: number, artistName: string ): Promise<WhichYear> {
   try {
     const albumYearData = await prisma.artist.findFirst({
       where: {
-        name: input,
+        id: artistID,
       },
       select: {
         begin_date_year: true,
@@ -30,7 +30,7 @@ export async function whichYear(input: string): Promise<WhichYear> {
       const albumYear = albumYearData.begin_date_year;
       const answers = generateAnswerswhichYear(albumYear);
       const shuffledArray = shuffleArray(answers);
-      const question = `In which year was ${input} born/founded?`;
+      const question = `In which year was ${artistName} born/founded?`;
       const response = {
         question: question,
         answers: shuffledArray,
@@ -46,20 +46,11 @@ export async function whichYear(input: string): Promise<WhichYear> {
   }
 }
 
-export async function whichAlbum(input: string): Promise<WhichAlbum> {
+export async function whichAlbum(artistID: number, artistName: string): Promise<WhichAlbum> {
   try {
-    const artistID = await prisma.artist.findFirst({
-      where: {
-        name: input,
-      },
-      select: {
-        id: true,
-      },
-    });
-    if (artistID) {
       const artistAlbums = await prisma.release_group.findMany({
         where: {
-          artist_credit: artistID.id,
+          artist_credit: artistID,
           type: 1,
         },
         select: {
@@ -87,7 +78,7 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
 
       const artistGenre = await prisma.artist_tag.findFirst({
         where: {
-          artist: artistID.id,
+          artist: artistID,
         },
         orderBy: {
           count: "desc",
@@ -158,16 +149,14 @@ export async function whichAlbum(input: string): Promise<WhichAlbum> {
 
       answerAlbums.push(chosenAlbum.name);
       answerAlbums = shuffleArray(answerAlbums)
-      const question = `Which of these albums belongs to ${input}?`;
+      const question = `Which of these albums belongs to ${artistName}?`;
       const response = {
         question: question,
         answers: answerAlbums,
         correct_answer: chosenAlbum.name,
       };
       return response;
-    } else {
-      return null;
-    }
+
   } catch (error) {
     console.error("Error fetching artist data:", error);
     throw new Error("Failed to fetch artist data.");

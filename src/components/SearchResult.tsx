@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Flag from "react-flagkit";
+import { useRouter } from "next/router";
 
 export interface SearchResultsProps {
   artistID: number;
@@ -11,12 +12,14 @@ export interface SearchResultsProps {
 }
 
 export function SearchResult(props: SearchResultsProps) {
+  const router = useRouter()
+ 
   let imageUrl = props.imageURL;
   if (!props.imageURL) {
     imageUrl = "/default.png";
   }
   return (
-    <div className="group relative h-[322px] w-[640px] bg-cover ">
+    <button onClick={() => router.push("/Quiz?artistID=" + props.artistID + "&artistName=" + props.artistName)} className="group relative h-[322px] w-[640px] bg-cover ">
       <Image
         src={imageUrl}
         fill={true}
@@ -43,6 +46,6 @@ export function SearchResult(props: SearchResultsProps) {
           className="h-[4.1875rem] w-[4.1875rem] flex-shrink-0 transform -translate-y-[1rem]"
         />
       </div>
-    </div>
+    </button>
   );
 }

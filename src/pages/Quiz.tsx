@@ -8,11 +8,14 @@ export default function Quiz() {
   const [questionNumber, setQuestionNumber] = useState(0)
   const [isAnswerSelected, setIsAnswerSelected] = useState(false)
   const router = useRouter();
-  const { artistName } = router.query;
-  if (!artistName || Array.isArray(artistName)) {
+  const  {artistID, artistName} = router.query;
+
+  console.log(artistID)
+  console.log(artistName)
+  if (!artistID || !artistName || Array.isArray(artistID) || Array.isArray(artistName)) {
     return <div>Loading...</div>;
   }
-  const quiz = api.mbdb.constructArtistQuiz.useQuery(artistName, {
+  const quiz = api.mbdb.constructArtistQuiz.useQuery({artistID, artistName}, {
     refetchOnWindowFocus: false
   });
 

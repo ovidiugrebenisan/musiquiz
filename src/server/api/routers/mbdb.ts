@@ -8,7 +8,7 @@ import {
 } from "~/utils/quiz_artist_functions";
 import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
-import * as countries from 'i18n-iso-countries';
+import * as countries from "i18n-iso-countries";
 import { getArtistBackgroundImageURL } from "~/utils/search_result_functions";
 
 type QuizItem = WhichYear | WhichAlbum;
@@ -19,7 +19,10 @@ const redis = Redis.fromEnv();
 
 const quizGenerator: Record<
   string,
-  (input: string) => Promise<WhichYear | WhichAlbum | null>
+  (
+    artistID: number,
+    artistName: string,
+  ) => Promise<WhichYear | WhichAlbum | null>
 > = {
   whichYear,
   whichAlbum,
@@ -61,68 +64,75 @@ export const getArtistData = createTRPCRouter({
       const response = [];
 
       if (artists) {
+        for (const artist of artists) {
+          const artistData = await ctx.prisma.artist.findFirst({
+            where: {
+              id: artist.id,
+            },
+            select: {
+              area: true,
+              comment: true,
+              gid: true,
+            },
+          });
 
-      for (const artist of artists) {
+          let countryCode: string | undefined = "";
+          let comment: string | undefined = "";
+          let imageURL: string | null = "";
+          let country: string | null = "";
 
-      const artistData = await ctx.prisma.artist.findFirst({
-        where: {
-          id: artist.id,
-        },
-        select: {
-          area: true,
-          comment: true,
-          gid: true
-        },
-      });
-
-      let countryCode: string | undefined = "";
-      let comment: string | undefined = "";
-      let imageURL: string | null  = "";
-      let country: string | null = "";
-
-      if (artistData?.area) {
-        const artistCountry = await ctx.prisma.area.findFirst({
-          where: {
-            id: artistData.area,
-          },
-          select: {
-            name: true,
-          },
-        });
-        if (artistCountry) {
-          country = artistCountry.name
-           countryCode = countries.getAlpha2Code(artistCountry.name, 'en')
+          if (artistData?.area) {
+            const artistCountry = await ctx.prisma.area.findFirst({
+              where: {
+                id: artistData.area,
+              },
+              select: {
+                name: true,
+              },
+            });
+            if (artistCountry) {
+              country = artistCountry.name;
+              countryCode = countries.getAlpha2Code(artistCountry.name, "en");
+            }
+          }
+          if (artistData?.comment) {
+            comment = artistData.comment;
+          }
+          if (artistData?.gid) {
+            imageURL = await getArtistBackgroundImageURL(artistData.gid);
+          }
+          const searchResult = {
+            artistID: artist.id,
+            imageURL,
+            comment,
+            countryCode,
+            country,
+          };
+          response.push(searchResult);
         }
       }
-      if (artistData?.comment) {
-        comment = artistData.comment
-      }
-      if (artistData?.gid) {
-        imageURL = await getArtistBackgroundImageURL(artistData.gid)
-      }
-      const searchResult = {
-        artistID: artist.id,
-        imageURL,
-        comment,
-        countryCode,
-        country,
-      }
-      response.push(searchResult)
-      }}
-    return response
-}),
+      return response;
+    }),
   constructArtistQuiz: publicProcedure
-    .input(z.string())
+    .input(
+      z.object({
+        artistID: z.string(),
+        artistName: z.string(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const quiz: Quiz = [];
+
       try {
         if (ctx.auth.userId) {
           const quiz_exists = (await redis.json.get(ctx.auth.userId)) as Quiz;
-
+          const artistID = Number(input.artistID);
+          console.log(artistID)
+          console.log(input.artistName)
           if (!quiz_exists) {
             for (const [quizType, generator] of Object.entries(quizGenerator)) {
               if (!quiz.some((q) => q?.question === quizType)) {
-                const newQuizItem = await generator(input);
+                const newQuizItem = await generator(artistID, input.artistName);
                 if (newQuizItem) {
                   quiz.push(newQuizItem);
                 }
@@ -134,7 +144,7 @@ export const getArtistData = createTRPCRouter({
               "$",
               JSON.stringify(quiz),
             );
-            await redis.expire(ctx.auth.userId, 60);
+            await redis.expire(ctx.auth.userId, 5);
             if (push_quiz) {
               return quiz;
             } else {
