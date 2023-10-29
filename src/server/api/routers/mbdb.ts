@@ -1,32 +1,23 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
-  type WhichAlbum,
-  type WhichYear,
-  whichAlbum,
-  whichYear,
+  type StringQuestion,
+  type NumberQuestion,
+  whichYearArtistStarted,
 } from "~/utils/quiz_artist_functions";
 import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
 import * as countries from "i18n-iso-countries";
 import { getArtistBackgroundImageURL } from "~/utils/search_result_functions";
+import { artist_begin_date_year } from "~/utils/ArtistQuiz/validators/artist_begin_date_year";
 
-type QuizItem = WhichYear | WhichAlbum;
+type QuizItem = StringQuestion | NumberQuestion;
 
 type Quiz = QuizItem[];
 
 const redis = Redis.fromEnv();
 
-const quizGenerator: Record<
-  string,
-  (
-    artistID: number,
-    artistName: string,
-  ) => Promise<WhichYear | WhichAlbum | null>
-> = {
-  whichYear,
-  whichAlbum,
-};
+
 
 export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
@@ -127,16 +118,12 @@ export const getArtistData = createTRPCRouter({
         if (ctx.auth.userId) {
           const quiz_exists = (await redis.json.get(ctx.auth.userId)) as Quiz;
           const artistID = Number(input.artistID);
-          console.log(artistID)
-          console.log(input.artistName)
+          const artistName = input.artistName;
           if (!quiz_exists) {
-            for (const [quizType, generator] of Object.entries(quizGenerator)) {
-              if (!quiz.some((q) => q?.question === quizType)) {
-                const newQuizItem = await generator(artistID, input.artistName);
-                if (newQuizItem) {
-                  quiz.push(newQuizItem);
-                }
-              }
+            const beginDateYear = await artist_begin_date_year(artistID)
+            if (beginDateYear !== null) {
+              const newQuizItem =  whichYearArtistStarted(beginDateYear, artistName)
+              quiz.push(newQuizItem)
             }
             shuffleArray(quiz);
             const push_quiz = await redis.json.set(
