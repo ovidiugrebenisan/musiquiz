@@ -16,6 +16,8 @@ export type StringQuestion = {
   correct_answer: string;
 };
 
+type Result<T, E = string> = { type: 'success', value: T } | { type: 'failure', error: E };
+
 export  function whichYearArtistStarted(
   begin_date_year: number,
   artistName: string,
@@ -42,32 +44,80 @@ async function getArtistStudioAlbums(artistID: number) {
       name: true,
     },
   });
-  const studioAlbums = [];
-  for (const studioAlbum of artistAlbums) {
-    const isNotStudio =
-      await prisma.release_group_secondary_type_join.findFirst({
+  const studioAlbums = (await Promise.all(
+    artistAlbums.map( async (album) => {
+      const isNotStudio = await prisma.release_group_secondary_type_join.findFirst({
         where: {
-          release_group: studioAlbum.id,
-        },
-      });
-    if (isNotStudio) {
-      continue;
-    } else {
-      studioAlbums.push(studioAlbum);
-    }
-  }
-  return studioAlbums;
+          release_group: album.id
+        }
+      })
+      return isNotStudio ? null : album
+    })
+  )).filter((album) : album is { id:number; name:string} => album !== null)
+
+  return studioAlbums
+
+}
+
+async function getStudioAlbumsNoSec(albums: number[]) {
+  const filteredAlbums = (await Promise.all(
+    albums.map( async (album) => {
+      const isNotStudio = await prisma.release_group_secondary_type_join.findFirst({
+        where: {
+          release_group: album
+        }
+      })
+      return isNotStudio ? null : album
+    })
+  )).filter((album): album is number => album !== null)
+
+  return filteredAlbums
 }
 
 export async function whichAlbumBelongsArtist(
   artistID: number,
   artistName: string,
-): Promise<StringQuestion> {
+): Promise<Result<StringQuestion>> {
   try {
     const studioAlbums = await getArtistStudioAlbums(artistID);
-    const chosenAlbum = studioAlbums[
-      Math.floor(Math.random() * studioAlbums.length)
-    ] as { id: number; name: string };
+    if (studioAlbums.length === 0) {
+      return { type: 'failure', error: 'Not enough data'}
+    } 
+
+    const validStudioAlbums = (await Promise.all(
+      studioAlbums.map(async (album) => {
+        const releaseDateInfo = await prisma.release_group_meta.findFirst({
+          where: {
+            id: album.id
+          },
+          select: {
+            first_release_date_year: true
+          }
+        });
+    
+        if (releaseDateInfo && releaseDateInfo.first_release_date_year) {
+          return {
+            id: album.id,
+            name: album.name,
+            releaseDate: releaseDateInfo.first_release_date_year
+          };
+        }
+        return null;
+      })
+    )).filter((album): album is { id: number; name: string; releaseDate: number } => album !== null);
+    
+
+    if (validStudioAlbums.length === 0) {
+      return { type: 'failure', error: 'Not enough data'}
+    }
+
+    const chosenAlbum = validStudioAlbums[
+      Math.floor(Math.random() * validStudioAlbums.length)
+    ] as { id: number; name: string; releaseDate: number };
+
+    const chosenAlbumYear = chosenAlbum.releaseDate
+
+
 
     const artistGenre = await prisma.artist_tag.findFirst({
       where: {
@@ -81,14 +131,11 @@ export async function whichAlbumBelongsArtist(
       },
     });
 
-    const chosenAlbumYear = await prisma.release_group_meta.findFirst({
-      where: {
-        id: chosenAlbum.id,
-      },
-      select: {
-        first_release_date_year: true,
-      },
-    });
+    if (artistGenre === null) {
+      return { type: 'failure', error: 'Not enough data'}
+    }
+
+
 
     const otherAlbumsGenre = await prisma.release_group_tag.findMany({
       where: {
@@ -104,7 +151,7 @@ export async function whichAlbumBelongsArtist(
 
     const otherAlbumsYear = await prisma.release_group_meta.findMany({
       where: {
-        first_release_date_year: chosenAlbumYear?.first_release_date_year,
+        first_release_date_year: chosenAlbumYear,
         id: {
           not: chosenAlbum.id,
         },
@@ -113,7 +160,6 @@ export async function whichAlbumBelongsArtist(
         id: true,
       },
     });
-    let answerAlbums: string[] = [];
     const otherAlbumsYearValues = otherAlbumsYear.map((rg) => rg.id);
     const otherAlbumsGenreValues = otherAlbumsGenre.map(
       (rg) => rg.release_group,
@@ -123,21 +169,25 @@ export async function whichAlbumBelongsArtist(
       otherAlbumsGenreSet.has(album),
     );
     const randomAlbums = shuffleArray(finalAlbums);
-    const finalRandomAlbums = randomAlbums.slice(0, 3);
-
-    for (const randomAlbum of finalRandomAlbums) {
-      const album = await prisma.release_group.findFirst({
-        where: {
-          id: randomAlbum,
-        },
-        select: {
-          name: true,
-        },
-      });
-      if (album) {
-        answerAlbums.push(album.name);
-      }
+    const randomStudioAlbums = await getStudioAlbumsNoSec(randomAlbums)
+    if (randomStudioAlbums.length === 0) {
+      return {type: 'failure', error: 'Not enough data'}
     }
+    const finalRandomAlbums = randomStudioAlbums.slice(0, 3);
+
+    let answerAlbums = await Promise.all(
+      finalRandomAlbums.map(async (albumID) => {
+        const albumName = await prisma.release_group.findFirst({
+          where: {
+            id: albumID
+          },
+          select: {
+            name: true
+          }
+        })
+        return albumName!.name
+      })
+    )
 
     answerAlbums.push(chosenAlbum.name);
     answerAlbums = shuffleArray(answerAlbums);
@@ -147,7 +197,10 @@ export async function whichAlbumBelongsArtist(
       answers: answerAlbums,
       correct_answer: chosenAlbum.name,
     };
-    return response;
+    return {
+      type: 'success',
+      value: response
+    };
   } catch (error) {
     console.error("Error fetching artist data:", error);
     throw new Error("Failed to fetch artist data.");

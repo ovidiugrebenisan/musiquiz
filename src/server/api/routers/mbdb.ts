@@ -4,6 +4,7 @@ import {
   type StringQuestion,
   type NumberQuestion,
   whichYearArtistStarted,
+  whichAlbumBelongsArtist,
 } from "~/utils/quiz_artist_functions";
 import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
@@ -124,6 +125,10 @@ export const getArtistData = createTRPCRouter({
             if (beginDateYear !== null) {
               const newQuizItem =  whichYearArtistStarted(beginDateYear, artistName)
               quiz.push(newQuizItem)
+            }
+            const whichAlbumBelongsToArtist =  await whichAlbumBelongsArtist(artistID, artistName)
+            if ( whichAlbumBelongsToArtist.type === 'success') {
+              quiz.push(whichAlbumBelongsToArtist.value)
             }
             shuffleArray(quiz);
             const push_quiz = await redis.json.set(
