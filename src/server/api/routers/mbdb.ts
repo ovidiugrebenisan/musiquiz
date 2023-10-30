@@ -10,8 +10,6 @@ import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
 import * as countries from "i18n-iso-countries";
 import { getArtistBackgroundImageURL } from "~/utils/search_result_functions";
-import { artist_begin_date_year } from "~/utils/ArtistQuiz/validators/artist_begin_date_year";
-
 type QuizItem = StringQuestion | NumberQuestion;
 
 type Quiz = QuizItem[];
@@ -121,10 +119,9 @@ export const getArtistData = createTRPCRouter({
           const artistID = Number(input.artistID);
           const artistName = input.artistName;
           if (!quiz_exists) {
-            const beginDateYear = await artist_begin_date_year(artistID)
-            if (beginDateYear !== null) {
-              const newQuizItem =  whichYearArtistStarted(beginDateYear, artistName)
-              quiz.push(newQuizItem)
+            const beginDateYear = await whichYearArtistStarted(artistID, artistName)
+            if (beginDateYear.type === 'success') {
+              quiz.push(beginDateYear.value)
             }
             const whichAlbumBelongsToArtist =  await whichAlbumBelongsArtist(artistID, artistName)
             if ( whichAlbumBelongsToArtist.type === 'success') {
