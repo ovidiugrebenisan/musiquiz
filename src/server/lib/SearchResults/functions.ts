@@ -1,37 +1,6 @@
 import axios from "axios"
-import { randomNumber } from "./helper_functions";
-
-interface MusicResponse {
-    name: string;
-    mbid_id: string;
-    musiclogo: Array<Image>;
-    albums: { [key: string]: Album };
-    artistthumb: Array<Image>;
-    artistbackground: Array<Image>;
-    hdmusiclogo: Array<Image>;
-    musicbanner: Array<Image>;
-}
-
-interface Image {
-    id: string;
-    url: string;
-    likes: string;
-    disc?: string;
-    size?: string;
-}
-
-interface Album {
-    albumcover: Array<Image>;
-    cdart: Array<CDArt>;
-}
-
-interface CDArt extends Image {
-    disc: string;
-    size: string;
-}
-
-
-
+import { randomNumber } from "~/utils/helper_functions";
+import type { MusicResponse } from "./definitions";
 
 export async function getArtistBackgroundImageURL(artistMBID: string): Promise<string | null> {
     try {

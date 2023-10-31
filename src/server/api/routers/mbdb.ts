@@ -1,15 +1,11 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import {
-  type StringQuestion,
-  type NumberQuestion,
-  whichYearArtistStarted,
-  whichAlbumBelongsArtist,
-} from "~/utils/quiz_artist_functions";
+import type { StringQuestion, NumberQuestion } from "~/server/lib/ArtistQuiz/definitions";
 import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
 import * as countries from "i18n-iso-countries";
-import { getArtistBackgroundImageURL } from "~/utils/search_result_functions";
+import { getArtistBackgroundImageURL } from "~/server/lib/SearchResults/functions";
+import { whichAlbumBelongsArtist, whichYearArtistStarted } from "~/server/lib/ArtistQuiz/functions";
 type QuizItem = StringQuestion | NumberQuestion;
 
 type Quiz = QuizItem[];

@@ -1,21 +1,10 @@
 import { prisma } from "~/server/db";
-import { shuffleArray, generateAnswerswhichYear } from "./helper_functions";
-
-export type NumberQuestion = {
-  question: string;
-  answers: number[];
-  correct_answer: number;
-};
-
-export type StringQuestion = {
-  question: string;
-  answers: string[];
-  correct_answer: string;
-};
-
-type Result<T, E = string> =
-  | { type: "success"; value: T }
-  | { type: "failure"; error: E };
+import type { Result, NumberQuestion, StringQuestion } from "./definitions";
+import {
+  generateAnswerswhichYear,
+  shuffleArray,
+} from "~/utils/helper_functions";
+import { getArtistStudioAlbums, getStudioAlbumsNoSec } from "./data";
 
 export async function whichYearArtistStarted(
   artistID: number,
@@ -42,38 +31,6 @@ export async function whichYearArtistStarted(
     correct_answer: artistStartYear.begin_date_year,
   };
   return { type: "success", value: response };
-}
-
-async function getArtistStudioAlbums(artistID: number) {
-  const artistAlbums = await prisma.release_group.findMany({
-    where: {
-      artist_credit: artistID,
-      type: 1,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
-  return artistAlbums
-}
-
-async function getStudioAlbumsNoSec(albums: number[]) {
-  const filteredAlbums = (
-    await Promise.all(
-      albums.map(async (album) => {
-        const isNotStudio =
-          await prisma.release_group_secondary_type_join.findFirst({
-            where: {
-              release_group: album,
-            },
-          });
-        return isNotStudio ? null : album;
-      }),
-    )
-  ).filter((album): album is number => album !== null);
-
-  return filteredAlbums;
 }
 
 export async function whichAlbumBelongsArtist(
@@ -208,65 +165,3 @@ export async function whichAlbumBelongsArtist(
     throw new Error("Failed to fetch artist data.");
   }
 }
-
-// async function getRandomTrackFromAlbum(releaseGroupId: number) {
-//   const releaseID = await prisma.release.findFirst({
-//     where: {
-//       release_group: releaseGroupId,
-//     },
-//     select: {
-//       id: true,
-//     },
-//   });
-//   if (releaseID) {
-//     const albumMedium = await prisma.medium.findFirst({
-//       where: {
-//         release: releaseID.id,
-//       },
-//       select: {
-//         id: true,
-//       },
-//     });
-//     if (albumMedium) {
-//       const albumTracks = await prisma.track.findMany({
-//         where: {
-//           medium: albumMedium.id,
-//         },
-//         select: {
-//           name: true,
-//         },
-//       });
-//       if (albumTracks) {
-//         const pickedTrack = albumTracks[randomNumber(albumTracks.length)]?.name;
-//         return pickedTrack;
-//       }
-//     }
-//   }
-// }
-
-// export async function whichSongBelongsAlbum(
-//   artistID: number,
-// ): Promise<StringQuestion> {
-//   const studioAlbums = await getArtistStudioAlbums(artistID);
-//   const randomIndex = randomNumber(studioAlbums.length);
-//   const pickedAlbum = studioAlbums[randomIndex];
-//   studioAlbums.slice(randomIndex, 1);
-//   const shuffledAlbums = shuffleArray(studioAlbums);
-//   shuffledAlbums.slice(0, 3);
-//   let answers: string[] = [];
-//   let question = "";
-//   let answer;
-//   if (pickedAlbum) {
-//     answer = await getRandomTrackFromAlbum(pickedAlbum.id);
-//     for (const album of shuffledAlbums) {
-//       answers.push(await getRandomTrackFromAlbum(album.id));
-//     }
-//     answers.push(answer);
-//     answers = shuffleArray(allTracks);
-//     question = `Which of these songs belongs to the ${pickedAlbum.name} album?`;
-//     return {
-//       question,
-//       answers: allTracks,
-//     };
-//   }
-// }
