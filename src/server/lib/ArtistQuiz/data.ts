@@ -141,21 +141,14 @@ export async function getAlbumsNames(albums: number[]): Promise<Result<string[]>
   const albumNames = (
     await Promise.all(
       albums.map(async (album) => {
-        const albumName = await prisma.release_group.findFirst({
-          where: {
-            id: album
-          },
-          select: {
-            name: true
-          }
-        });
-        if (albumName !== null) {
-          return albumName.name;
+        const albumName = await getAlbumName(album)
+        if (albumName.type === 'success') {
+          return albumName.value;
         }
-        return undefined;
+        return null;
       })
     )
-  ).filter((album): album is string => album !== undefined);
+  ).filter((album): album is string => album !== null);
 
   if (albumNames.length === 0) {
     return { type: "failure", error: "No album names found" };
@@ -177,4 +170,136 @@ export async function getAlbumName(album: number): Promise<Result<string>> {
     return {type:'failure', error: 'Artist has no name'}
   }
   return {type: 'success', value: albumName.name}
+}
+
+
+export async function getReleaseId(releaseGroup: number): Promise<Result<number>> {
+  const releaseID = await prisma.release.findFirst({
+    where: {
+      release_group: releaseGroup
+    },
+    select: {
+      id: true
+    }
+  })
+
+  if (!releaseID) {
+    return {type:"failure", error: 'Release group has no releases'}
+  }
+
+  return {type:'success', value: releaseID.id}
+}
+
+
+export async function getMediumId(release: number): Promise<Result<number>> {
+  const medium = await prisma.medium.findFirst({
+    where: {
+      release: release
+    },
+    select: {
+      id: true
+    }
+  })
+
+  if (!medium) {
+    return {type: 'failure', error: 'Release does not have a medium'}
+  }
+
+  return {type: 'success', value: medium.id}
+}
+
+export async function getTrackIDsByMedium(mediumID: number): Promise<number[]> {
+  const tracks = await prisma.track.findMany({
+    where: {
+      medium: mediumID
+    },
+    select: {
+      id: true
+    }
+  })
+
+  const trackIDs = tracks.map(track => track.id)
+
+  return trackIDs
+}
+
+export async function getReleaseIDS(release_groups: number[]): Promise<Result<number[]>> {
+  const releaseIDS = (await Promise.all(
+    release_groups.map(async (releaseGroup) => {
+      const release_id = await getReleaseId(releaseGroup)
+      if (release_id.type === 'success') {
+        return release_id.value
+      }
+      return null
+    })
+  )).filter((id): id is number => id !== null)
+
+  if (releaseIDS.length === 0) {
+    return {type: 'failure', error: 'Not releases found'}
+  }
+
+  return {type: 'success', value: releaseIDS}
+
+}
+
+export async function getMediumsbyReleaseIDs(releases: number[]): Promise<Result<number[]>> {
+  const mediums = (await Promise.all(
+    releases.map(async (release) => {
+      const medium = await getMediumId(release)
+      if (medium.type === 'success') {
+        return medium.value
+      }
+      return null
+    })
+  )).filter((medium): medium is number => medium !== null)
+
+  if (mediums.length === 0) {
+    return {type:'failure', error: 'No mediums found'}
+  }
+
+  return {type:'success', value: mediums}
+}
+
+export async function getTracksbyMediumIDS(mediums: number[]): Promise<number[]> {
+  const tracksIDS = await Promise.all(
+    mediums.map(async (medium) => {
+      const tracks = await getTrackIDsByMedium(medium)
+      return tracks
+    })
+  )
+  const flattenedArray  =  tracksIDS.flat()
+  return flattenedArray
+}
+
+export async function getTrackNamebyID(track: number): Promise<Result<string>> {
+  const trackName = await prisma.track.findFirst({
+    where: {
+      id: track
+    },
+    select: {
+      name: true
+    }
+  })
+
+  if (!trackName) {
+    return {type: 'failure', error: 'No name found for track'}
+  }
+  return {type: 'success', value: trackName.name}
+}
+
+export async function getTrackNamesbyIDS(tracks: number[]): Promise<Result<string[]>> {
+  const trackNames =(await Promise.all(
+    tracks.map(async (track) => {
+      const trackName = await getTrackNamebyID(track)
+      if (trackName.type === 'success') {
+        return trackName.value
+      }
+      return null
+    })
+  )).filter((track): track is string => track !== null)
+
+  if (trackNames.length === 0) {
+    return {type:'failure', error: 'No track names found'}
+  }
+  return {type: 'success', value: trackNames}
 }

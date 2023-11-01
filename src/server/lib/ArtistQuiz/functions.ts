@@ -2,6 +2,7 @@ import type { Result, NumberQuestion, StringQuestion } from "./definitions";
 import {
   arrayIntersection,
   generateAnswerswhichYear,
+  randomNumber,
   shuffleArray,
 } from "~/utils/helper_functions";
 import {
@@ -14,6 +15,14 @@ import {
   getAlbumsbyYear,
   getAlbumsNames,
   getAlbumName,
+  getTrackIDsByMedium,
+  getReleaseIDS,
+  getMediumsbyReleaseIDs,
+  getTracksbyMediumIDS,
+  getTrackNamesbyIDS,
+  getTrackNamebyID,
+  getReleaseId,
+  getMediumId,
 } from "./data";
 
 export async function whichYearArtistStarted(
@@ -95,9 +104,9 @@ export async function whichAlbumBelongsArtist(
       otherAlbumsYear.value,
     );
     otherAlbums.filter((value) => value !== chosenAlbum);
-    const filteredOtherAlbums = await getStudioAlbumsNoSec(otherAlbums)
-    if (filteredOtherAlbums.type === 'failure') {
-      return {type: 'failure', error: 'Could not find studio other albums'}
+    const filteredOtherAlbums = await getStudioAlbumsNoSec(otherAlbums);
+    if (filteredOtherAlbums.type === "failure") {
+      return { type: "failure", error: "Could not find studio other albums" };
     }
     shuffleArray(filteredOtherAlbums.value);
     filteredOtherAlbums.value.splice(3);
@@ -127,4 +136,79 @@ export async function whichAlbumBelongsArtist(
     console.error("Error fetching artist data:", error);
     throw new Error("Failed to fetch artist data.");
   }
+}
+
+export async function whichAlbumSongBelongs(
+  artistID: number,
+): Promise<Result<StringQuestion>> {
+  const studioAlbums = await getArtistStudioAlbums(artistID);
+  if (studioAlbums.length < 2) {
+    return { type: "failure", error: "Not enough albums" };
+  }
+  const filteredAlbums = await getStudioAlbumsNoSec(studioAlbums);
+  if (filteredAlbums.type === "failure" || filteredAlbums.value.length < 2) {
+    return { type: "failure", error: "Not enough albums" };
+  }
+
+  const chosenAlbum = filteredAlbums.value[randomNumber(filteredAlbums.value.length)] as number
+
+  filteredAlbums.value.filter(album => album !== chosenAlbum)
+
+  const releaseIDs = await getReleaseIDS(filteredAlbums.value)
+
+  const albumName = await getAlbumName(chosenAlbum)
+
+  const chosenReleaseID = await getReleaseId(chosenAlbum)
+
+  if (chosenReleaseID.type === 'failure') {
+    return {type: 'failure', error: chosenReleaseID.error}
+  }
+
+  const chosenMedium = await getMediumId(chosenReleaseID.value)
+
+  if (chosenMedium.type === 'failure') {
+    return {type: 'failure', error: chosenMedium.error}
+  }
+
+  if (albumName.type === 'failure') {
+    return {type: 'failure', error: albumName.error}
+  }
+
+  if (releaseIDs.type === 'failure' || releaseIDs.value.length < 2) {
+    return {type: 'failure', error: "Not enough releases"}
+  }
+
+  const mediums = await getMediumsbyReleaseIDs(releaseIDs.value)
+
+  if (mediums.type === 'failure' || mediums.value.length < 2) {
+    return {type: 'failure', error: 'Not enough mediums'}
+  }
+
+  mediums.value.filter(medium => medium !== chosenMedium.value)
+  while (mediums.value.length < 3 ) {
+    mediums.value.push(mediums.value[randomNumber(mediums.value.length)] as number)
+  }
+
+  const otherTracks = await getTracksbyMediumIDS(mediums.value)
+  const chosenTracks = await getTrackIDsByMedium(chosenMedium.value)
+  const otherTracksSet: Set<number> = new Set(otherTracks)
+  const uniqueOtherTracks: number[] = Array.from(otherTracksSet)
+  shuffleArray(uniqueOtherTracks)
+  uniqueOtherTracks.splice(3)
+  const trackNames = await getTrackNamesbyIDS(uniqueOtherTracks)
+  const chosenTrack = await getTrackNamebyID(chosenTracks[randomNumber(chosenTracks.length)] as number)
+
+  if (trackNames.type === "failure" || chosenTrack.type === 'failure') {
+    return {type:'failure', error: 'something went wrong'}
+  }
+  trackNames.value.push(chosenTrack.value)
+
+  return {type: 'success', value: {
+    question: `Which of these songs belongs to the album called  ${albumName.value}`,
+    correct_answer: chosenTrack.value,
+    answers: trackNames.value
+  }}
+
+
+
 }

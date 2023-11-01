@@ -5,7 +5,7 @@ import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
 import * as countries from "i18n-iso-countries";
 import { getArtistBackgroundImageURL } from "~/server/lib/SearchResults/functions";
-import { whichAlbumBelongsArtist, whichYearArtistStarted } from "~/server/lib/ArtistQuiz/functions";
+import { whichAlbumBelongsArtist, whichAlbumSongBelongs, whichYearArtistStarted } from "~/server/lib/ArtistQuiz/functions";
 type QuizItem = StringQuestion | NumberQuestion;
 
 type Quiz = QuizItem[];
@@ -122,6 +122,10 @@ export const getArtistData = createTRPCRouter({
             const whichAlbumBelongsToArtist =  await whichAlbumBelongsArtist(artistID, artistName)
             if ( whichAlbumBelongsToArtist.type === 'success') {
               quiz.push(whichAlbumBelongsToArtist.value)
+            }
+            const whichSongBelongstoAlbum = await whichAlbumSongBelongs(artistID)
+            if (whichSongBelongstoAlbum.type === 'success') {
+              quiz.push(whichSongBelongstoAlbum.value)
             }
             shuffleArray(quiz);
             const push_quiz = await redis.json.set(
