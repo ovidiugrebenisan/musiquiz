@@ -10,6 +10,7 @@ export type NumberQuestion = {
     correct_answer: string;
   };
   
-export   type Result<T, E = string> =
+export   type Result<T , E = string > =
     | { type: "success"; value: T }
     | { type: "failure"; error: E };
+

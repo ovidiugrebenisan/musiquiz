@@ -1,34 +1,37 @@
-import { prisma } from "~/server/db";
 import type { Result, NumberQuestion, StringQuestion } from "./definitions";
 import {
+  arrayIntersection,
   generateAnswerswhichYear,
   shuffleArray,
 } from "~/utils/helper_functions";
-import { getArtistStudioAlbums, getStudioAlbumsNoSec } from "./data";
+import {
+  getAlbumReleaseYear,
+  getArtistGenre,
+  getArtistStartYear,
+  getArtistStudioAlbums,
+  getStudioAlbumsNoSec,
+  getAlbumsOfGenre,
+  getAlbumsbyYear,
+  getAlbumsNames,
+  getAlbumName,
+} from "./data";
 
 export async function whichYearArtistStarted(
   artistID: number,
   artistName: string,
 ): Promise<Result<NumberQuestion>> {
-  const artistStartYear = await prisma.artist.findFirst({
-    where: {
-      id: artistID,
-    },
-    select: {
-      begin_date_year: true,
-    },
-  });
+  const artistStartYear = await getArtistStartYear(artistID);
 
-  if (!artistStartYear || !artistStartYear.begin_date_year) {
-    return { type: "failure", error: "Artist does not have start year" };
+  if (artistStartYear.type === "failure") {
+    return { type: "failure", error: "Not enough data" };
   }
-  const answers = generateAnswerswhichYear(artistStartYear.begin_date_year);
+  const answers = generateAnswerswhichYear(artistStartYear.value);
   const shuffledArray = shuffleArray(answers);
   const question = `In which year was ${artistName} born/founded?`;
   const response = {
     question: question,
     answers: shuffledArray,
-    correct_answer: artistStartYear.begin_date_year,
+    correct_answer: artistStartYear.value,
   };
   return { type: "success", value: response };
 }
@@ -38,123 +41,83 @@ export async function whichAlbumBelongsArtist(
   artistName: string,
 ): Promise<Result<StringQuestion>> {
   try {
+    //Get all albums from artist
     const studioAlbums = await getArtistStudioAlbums(artistID);
     if (studioAlbums.length === 0) {
       return { type: "failure", error: "Not enough data" };
     }
 
-    const validStudioAlbums = (
-      await Promise.all(
-        studioAlbums.map(async (album) => {
-          const releaseDateInfo = await prisma.release_group_meta.findFirst({
-            where: {
-              id: album.id,
-            },
-            select: {
-              first_release_date_year: true,
-            },
-          });
+    //Filter by only studio albums
+    const validStudioAlbums = await getStudioAlbumsNoSec(studioAlbums);
 
-          if (releaseDateInfo && releaseDateInfo.first_release_date_year) {
-            return {
-              id: album.id,
-              name: album.name,
-              releaseDate: releaseDateInfo.first_release_date_year,
-            };
-          }
-          return null;
-        }),
-      )
-    ).filter(
-      (album): album is { id: number; name: string; releaseDate: number } =>
-        album !== null,
-    );
-
-    if (validStudioAlbums.length === 0) {
+    if (validStudioAlbums.type === "failure") {
       return { type: "failure", error: "Not enough data" };
     }
 
-    const chosenAlbum = validStudioAlbums[
-      Math.floor(Math.random() * validStudioAlbums.length)
-    ] as { id: number; name: string; releaseDate: number };
+    //Choose a random album
+    const chosenAlbum =
+      validStudioAlbums.value[
+        Math.floor(Math.random() * validStudioAlbums.value.length)
+      ];
 
-    const chosenAlbumYear = chosenAlbum.releaseDate;
+    if (chosenAlbum === undefined) {
+      return { type: "failure", error: "Could not choose a random album." };
+    }
 
-    const artistGenre = await prisma.artist_tag.findFirst({
-      where: {
-        artist: artistID,
-      },
-      orderBy: {
-        count: "desc",
-      },
-      select: {
-        tag: true,
-      },
-    });
+    //Get the albums release year
+    const albumReleaseYear = await getAlbumReleaseYear(chosenAlbum);
 
-    if (artistGenre === null) {
+    if (albumReleaseYear.type === "failure") {
       return { type: "failure", error: "Not enough data" };
     }
 
-    const otherAlbumsGenre = await prisma.release_group_tag.findMany({
-      where: {
-        tag: artistGenre?.tag,
-        release_group: {
-          not: chosenAlbum.id,
-        },
-      },
-      select: {
-        release_group: true,
-      },
-    });
+    //Get the Artist's genre
+    const artistGenre = await getArtistGenre(artistID);
 
-    const otherAlbumsYear = await prisma.release_group_meta.findMany({
-      where: {
-        first_release_date_year: chosenAlbumYear,
-        id: {
-          not: chosenAlbum.id,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-    const otherAlbumsYearValues = otherAlbumsYear.map((rg) => rg.id);
-    const otherAlbumsGenreValues = otherAlbumsGenre.map(
-      (rg) => rg.release_group,
-    );
-    const otherAlbumsGenreSet = new Set(otherAlbumsGenreValues);
-    const finalAlbums = otherAlbumsYearValues.filter((album) =>
-      otherAlbumsGenreSet.has(album),
-    );
-    const randomAlbums = shuffleArray(finalAlbums);
-    const randomStudioAlbums = await getStudioAlbumsNoSec(randomAlbums);
-    if (randomStudioAlbums.length === 0) {
+    if (artistGenre.type === "failure") {
       return { type: "failure", error: "Not enough data" };
     }
-    const finalRandomAlbums = randomStudioAlbums.slice(0, 3);
 
-    let answerAlbums = await Promise.all(
-      finalRandomAlbums.map(async (albumID) => {
-        const albumName = await prisma.release_group.findFirst({
-          where: {
-            id: albumID,
-          },
-          select: {
-            name: true,
-          },
-        });
-        return albumName!.name;
-      }),
+    const otherAlbumsGenre = await getAlbumsOfGenre(artistGenre.value);
+
+    if (otherAlbumsGenre.type === "failure") {
+      return { type: "failure", error: "Not enough data" };
+    }
+
+    const otherAlbumsYear = await getAlbumsbyYear(albumReleaseYear.value);
+
+    if (otherAlbumsYear.type === "failure") {
+      return { type: "failure", error: "Not enough data" };
+    }
+
+    const otherAlbums = arrayIntersection(
+      otherAlbumsGenre.value,
+      otherAlbumsYear.value,
     );
+    otherAlbums.filter((value) => value !== chosenAlbum);
+    const filteredOtherAlbums = await getStudioAlbumsNoSec(otherAlbums)
+    if (filteredOtherAlbums.type === 'failure') {
+      return {type: 'failure', error: 'Could not find studio other albums'}
+    }
+    shuffleArray(filteredOtherAlbums.value);
+    filteredOtherAlbums.value.splice(3);
+    filteredOtherAlbums.value.push(chosenAlbum);
 
-    answerAlbums.push(chosenAlbum.name);
-    answerAlbums = shuffleArray(answerAlbums);
+    shuffleArray(filteredOtherAlbums.value);
+    const finalAlbums = await getAlbumsNames(filteredOtherAlbums.value);
+    if (finalAlbums.type === "failure") {
+      return { type: "failure", error: "Not enough data" };
+    }
+    const chosenAlbumName = await getAlbumName(chosenAlbum);
+    if (chosenAlbumName.type === "failure") {
+      return { type: "failure", error: "Not enough data" };
+    }
+
     const question = `Which of these albums belongs to ${artistName}?`;
     const response = {
       question: question,
-      answers: answerAlbums,
-      correct_answer: chosenAlbum.name,
+      answers: finalAlbums.value,
+      correct_answer: chosenAlbumName.value,
     };
     return {
       type: "success",
