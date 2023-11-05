@@ -150,65 +150,71 @@ export async function whichAlbumSongBelongs(
     return { type: "failure", error: "Not enough albums" };
   }
 
-  const chosenAlbum = filteredAlbums.value[randomNumber(filteredAlbums.value.length)] as number
+  const chosenAlbum = filteredAlbums.value[
+    randomNumber(filteredAlbums.value.length)
+  ] as number;
 
-  filteredAlbums.value.filter(album => album !== chosenAlbum)
+  filteredAlbums.value.filter((album) => album !== chosenAlbum);
 
-  const releaseIDs = await getReleaseIDS(filteredAlbums.value)
+  const releaseIDs = await getReleaseIDS(filteredAlbums.value);
 
-  const albumName = await getAlbumName(chosenAlbum)
+  const albumName = await getAlbumName(chosenAlbum);
 
-  const chosenReleaseID = await getReleaseId(chosenAlbum)
+  const chosenReleaseID = await getReleaseId(chosenAlbum);
 
-  if (chosenReleaseID.type === 'failure') {
-    return {type: 'failure', error: chosenReleaseID.error}
+  if (chosenReleaseID.type === "failure") {
+    return { type: "failure", error: chosenReleaseID.error };
   }
 
-  const chosenMedium = await getMediumId(chosenReleaseID.value)
+  const chosenMedium = await getMediumId(chosenReleaseID.value);
 
-  if (chosenMedium.type === 'failure') {
-    return {type: 'failure', error: chosenMedium.error}
+  if (chosenMedium.type === "failure") {
+    return { type: "failure", error: chosenMedium.error };
   }
 
-  if (albumName.type === 'failure') {
-    return {type: 'failure', error: albumName.error}
+  if (albumName.type === "failure") {
+    return { type: "failure", error: albumName.error };
   }
 
-  if (releaseIDs.type === 'failure' || releaseIDs.value.length < 2) {
-    return {type: 'failure', error: "Not enough releases"}
+  if (releaseIDs.type === "failure" || releaseIDs.value.length < 2) {
+    return { type: "failure", error: "Not enough releases" };
   }
 
-  const mediums = await getMediumsbyReleaseIDs(releaseIDs.value)
+  const mediums = await getMediumsbyReleaseIDs(releaseIDs.value);
 
-  if (mediums.type === 'failure' || mediums.value.length < 2) {
-    return {type: 'failure', error: 'Not enough mediums'}
+  if (mediums.type === "failure" || mediums.value.length < 2) {
+    return { type: "failure", error: "Not enough mediums" };
   }
 
-  mediums.value.filter(medium => medium !== chosenMedium.value)
-  while (mediums.value.length < 3 ) {
-    mediums.value.push(mediums.value[randomNumber(mediums.value.length)] as number)
+  mediums.value.filter((medium) => medium !== chosenMedium.value);
+  while (mediums.value.length < 3) {
+    mediums.value.push(
+      mediums.value[randomNumber(mediums.value.length)] as number,
+    );
   }
 
-  const otherTracks = await getTracksbyMediumIDS(mediums.value)
-  const chosenTracks = await getTrackIDsByMedium(chosenMedium.value)
-  const otherTracksSet: Set<number> = new Set(otherTracks)
-  const uniqueOtherTracks: number[] = Array.from(otherTracksSet)
-  shuffleArray(uniqueOtherTracks)
-  uniqueOtherTracks.splice(3)
-  const trackNames = await getTrackNamesbyIDS(uniqueOtherTracks)
-  const chosenTrack = await getTrackNamebyID(chosenTracks[randomNumber(chosenTracks.length)] as number)
+  const otherTracks = await getTracksbyMediumIDS(mediums.value);
+  const chosenTracks = await getTrackIDsByMedium(chosenMedium.value);
+  const otherTracksSet: Set<number> = new Set(otherTracks);
+  const uniqueOtherTracks: number[] = Array.from(otherTracksSet);
+  shuffleArray(uniqueOtherTracks);
+  uniqueOtherTracks.splice(3);
+  const trackNames = await getTrackNamesbyIDS(uniqueOtherTracks);
+  const chosenTrack = await getTrackNamebyID(
+    chosenTracks[randomNumber(chosenTracks.length)] as number,
+  );
 
-  if (trackNames.type === "failure" || chosenTrack.type === 'failure') {
-    return {type:'failure', error: 'something went wrong'}
+  if (trackNames.type === "failure" || chosenTrack.type === "failure") {
+    return { type: "failure", error: "something went wrong" };
   }
-  trackNames.value.push(chosenTrack.value)
+  trackNames.value.push(chosenTrack.value);
 
-  return {type: 'success', value: {
-    question: `Which of these songs belongs to the album called  ${albumName.value}`,
-    correct_answer: chosenTrack.value,
-    answers: trackNames.value
-  }}
-
-
-
+  return {
+    type: "success",
+    value: {
+      question: `Which of these songs belongs to the album called  ${albumName.value}`,
+      correct_answer: chosenTrack.value,
+      answers: trackNames.value,
+    },
+  };
 }

@@ -334,7 +334,6 @@ model artist {
   @@index([area], map: "artist_idx_area")
   @@index([begin_area], map: "artist_idx_begin_area")
   @@index([end_area], map: "artist_idx_end_area")
-  @@index([name], map: "artist_idx_musicbrainz_collate")
   @@index([name], map: "artist_idx_name")
   @@index([sort_name], map: "artist_idx_sort_name")
   @@schema("musicbrainz")
@@ -436,7 +435,6 @@ model artist_credit {
   edits_pending Int       @default(0)
   gid           String    @unique(map: "artist_credit_idx_gid") @db.Uuid
 
-  @@index([name], map: "artist_credit_idx_musicbrainz_collate")
   @@schema("musicbrainz")
 }
 
@@ -461,7 +459,6 @@ model artist_credit_name {
 
   @@id([artist_credit, position])
   @@index([artist], map: "artist_credit_name_idx_artist")
-  @@index([name], map: "artist_credit_name_idx_musicbrainz_collate")
   @@schema("musicbrainz")
 }
 
@@ -657,27 +654,6 @@ model cdtoc_raw {
 model country_area {
   area Int @id
 
-  @@schema("musicbrainz")
-}
-
-model dbmirror_pending {
-  seqid                Int                    @id @default(autoincrement())
-  tablename            String                 @db.VarChar
-  op                   String?                @db.Char(1)
-  xid                  Int
-  dbmirror_pendingdata dbmirror_pendingdata[]
-
-  @@index([xid], map: "dbmirror_pending_xid_index")
-  @@schema("musicbrainz")
-}
-
-model dbmirror_pendingdata {
-  seqid            Int
-  iskey            Boolean
-  data             String?          @db.VarChar
-  dbmirror_pending dbmirror_pending @relation(fields: [seqid], references: [seqid], onDelete: Cascade)
-
-  @@id([seqid, iskey])
   @@schema("musicbrainz")
 }
 
@@ -3461,7 +3437,6 @@ model label {
   ended            Boolean   @default(false)
 
   @@index([area], map: "label_idx_area")
-  @@index([name], map: "label_idx_musicbrainz_collate")
   @@index([name], map: "label_idx_name")
   @@schema("musicbrainz")
 }
@@ -4121,7 +4096,6 @@ model recording {
   video         Boolean   @default(false)
 
   @@index([artist_credit], map: "recording_idx_artist_credit")
-  @@index([name], map: "recording_idx_musicbrainz_collate")
   @@index([name], map: "recording_idx_name")
   @@schema("musicbrainz")
 }
@@ -4292,7 +4266,6 @@ model release {
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([artist_credit], map: "release_idx_artist_credit")
-  @@index([name], map: "release_idx_musicbrainz_collate")
   @@index([name], map: "release_idx_name")
   @@index([release_group], map: "release_idx_release_group")
   @@schema("musicbrainz")
@@ -4426,7 +4399,6 @@ model release_group {
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([artist_credit], map: "release_group_idx_artist_credit")
-  @@index([name], map: "release_group_idx_musicbrainz_collate")
   @@index([name], map: "release_group_idx_name")
   @@schema("musicbrainz")
 }
@@ -4987,7 +4959,6 @@ model work {
   edits_pending Int       @default(0)
   last_updated  DateTime? @default(now()) @db.Timestamptz(6)
 
-  @@index([name], map: "work_idx_musicbrainz_collate")
   @@index([name], map: "work_idx_name")
   @@schema("musicbrainz")
 }
@@ -5145,13 +5116,6 @@ model work_type {
   gid         String  @unique(map: "work_type_idx_gid") @db.Uuid
 
   @@schema("musicbrainz")
-}
-
-model user_metadata {
-  user_id            String  @id @unique
-  current_artist     String @default("")
-
-  @@schema("musiquiz")
 }
 
 enum cover_art_presence {
