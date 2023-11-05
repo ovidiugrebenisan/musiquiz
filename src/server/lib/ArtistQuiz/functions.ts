@@ -218,3 +218,46 @@ export async function whichAlbumSongBelongs(
     },
   };
 }
+
+export async function whichYearAlbum(artistID: number): Promise<Result<NumberQuestion>> {
+  const artistAlbums = await getArtistStudioAlbums(artistID)
+  if (artistAlbums.length === 0) {
+    return {type: 'failure', error: 'No albums found'};
+    }
+
+  const artistStudioAlbums = await getStudioAlbumsNoSec(artistAlbums)
+
+  if (artistStudioAlbums.type === 'failure') {
+    return {type: 'failure', error: artistStudioAlbums.error}
+  }
+
+  const chosenAlbum = artistStudioAlbums.value[randomNumber(artistStudioAlbums.value.length)] as number
+  const chosenAlbumName = await getAlbumName(chosenAlbum)
+
+  if (chosenAlbumName.type === 'failure') {
+    return { type: 'failure', error: chosenAlbumName.error}
+  }
+  const chosenAlbumYear = await getAlbumReleaseYear(chosenAlbum)
+
+  if (chosenAlbumYear.type === 'failure') {
+    return {type: 'failure', error: chosenAlbumYear.error}
+  }
+
+  const answers = generateAnswerswhichYear(chosenAlbumYear.value)
+
+  const shuffledAnswers = shuffleArray(answers)
+
+  const question = `In which year was the album ${chosenAlbumName.value} released?`
+
+  return {
+    type: 'success',
+    value: {
+      question,
+      answers: shuffledAnswers,
+      correct_answer: chosenAlbumYear.value
+    }
+  }
+
+
+  }
+
