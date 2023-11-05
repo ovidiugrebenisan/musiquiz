@@ -1,18 +1,24 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import type { StringQuestion, NumberQuestion } from "~/server/lib/ArtistQuiz/definitions";
+import type {
+  StringQuestion,
+  NumberQuestion,
+} from "~/server/lib/ArtistQuiz/definitions";
 import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
 import * as countries from "i18n-iso-countries";
 import { getArtistBackgroundImageURL } from "~/server/lib/SearchResults/functions";
-import { whichAlbumBelongsArtist, whichAlbumSongBelongs, whichYearAlbum, whichYearArtistStarted } from "~/server/lib/ArtistQuiz/functions";
+import {
+  whichAlbumBelongsArtist,
+  whichAlbumSongBelongs,
+  whichYearAlbum,
+  whichYearArtistStarted,
+} from "~/server/lib/ArtistQuiz/functions";
 type QuizItem = StringQuestion | NumberQuestion;
 
 type Quiz = QuizItem[];
 
 const redis = Redis.fromEnv();
-
-
 
 export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
@@ -115,22 +121,27 @@ export const getArtistData = createTRPCRouter({
           const artistID = Number(input.artistID);
           const artistName = input.artistName;
           if (!quiz_exists) {
-            const beginDateYear = await whichYearArtistStarted(artistID, artistName)
-            if (beginDateYear.type === 'success') {
-              quiz.push(beginDateYear.value)
-            }
-            const whichAlbumBelongsToArtist =  await whichAlbumBelongsArtist(artistID, artistName)
-            if ( whichAlbumBelongsToArtist.type === 'success') {
-              quiz.push(whichAlbumBelongsToArtist.value)
-            }
-            const whichSongBelongstoAlbum = await whichAlbumSongBelongs(artistID)
-            if (whichSongBelongstoAlbum.type === 'success') {
-              quiz.push(whichSongBelongstoAlbum.value)
-            }
+            const beginDateYear = await whichYearArtistStarted(
+              artistID,
+              artistName,
+            );
+
+            quiz.push(beginDateYear);
+
+            const whichAlbumBelongsToArtist = await whichAlbumBelongsArtist(
+              artistID,
+              artistName,
+            );
+
+            quiz.push(whichAlbumBelongsToArtist);
+
+            const whichSongBelongstoAlbum =
+              await whichAlbumSongBelongs(artistID);
+            quiz.push(whichSongBelongstoAlbum);
+
             const inWhichYearWasAlbumReleased = await whichYearAlbum(artistID);
-            if (inWhichYearWasAlbumReleased.type === 'success') {
-              quiz.push(inWhichYearWasAlbumReleased.value)
-            }
+            quiz.push(inWhichYearWasAlbumReleased);
+
             shuffleArray(quiz);
             const push_quiz = await redis.json.set(
               ctx.auth.userId,

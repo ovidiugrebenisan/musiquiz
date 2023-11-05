@@ -1,305 +1,229 @@
 import { prisma } from "~/server/db";
-import type {  Result } from "./definitions";
 
-export async function getArtistStudioAlbums(
-  artistID: number,
-): Promise<number[]> {
-  const artistAlbums = await prisma.release_group.findMany({
-    where: {
-      artist_credit: artistID,
-      type: 1,
-    },
-    select: {
-      id: true,
-    },
-  });
-  const response = artistAlbums.map((album) => album.id);
-  return response;
+async function handleDatabaseQuery<T>(
+  queryFunction: () => Promise<T>,
+  errorMessage: string
+): Promise<T> {
+  try {
+    return await queryFunction();
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`${errorMessage}: ${error.message}`);
+    } else {
+      throw new Error(errorMessage);
+    }
+  }
 }
 
-export async function getStudioAlbumsNoSec(
-  albums: number[],
-): Promise<Result<number[]>> {
-  const filteredAlbums = (
-    await Promise.all(
+export async function getArtistStudioAlbums(artistID: number): Promise<number[]> {
+  return handleDatabaseQuery(async () => {
+    const artistAlbums = await prisma.release_group.findMany({
+      where: { artist_credit: artistID, type: 1 },
+      select: { id: true },
+    });
+    return artistAlbums.map(album => album.id);
+  }, `Failed to get studio albums for artist ${artistID}`);
+}
+
+export async function getStudioAlbumsNoSec(albums: number[]): Promise<number[]> {
+  return handleDatabaseQuery(async () => {
+    const filteredAlbums = (await Promise.all(
       albums.map(async (album) => {
-        const isNotStudio =
-          await prisma.release_group_secondary_type_join.findFirst({
-            where: {
-              release_group: album,
-            },
-          });
+        const isNotStudio = await prisma.release_group_secondary_type_join.findFirst({
+          where: { release_group: album },
+        });
         return isNotStudio ? null : album;
-      }),
-    )
-  ).filter((album): album is number => album !== null);
-
-  if (filteredAlbums.length === 0) {
-    return { type: "failure", error: "Could not find any studio albums" };
-  }
-
-  return { type: "success", value: filteredAlbums };
-}
-
-export async function getArtistStartYear(
-  artistID: number,
-): Promise<Result<number>> {
-  const startYear = await prisma.artist.findFirst({
-    where: {
-      id: artistID,
-    },
-    select: {
-      begin_date_year: true,
-    },
-  });
-  if (!startYear || !startYear.begin_date_year) {
-    return { type: "failure", error: "Artist does not have a start year" };
-  }
-  return { type: "success", value: startYear.begin_date_year };
-}
-
-export async function getAlbumReleaseYear(
-  album: number,
-): Promise<Result<number>> {
-  const albumReleaseYear = await prisma.release_group_meta.findFirst({
-    where: {
-      id: album,
-    },
-    select: {
-      first_release_date_year: true,
-    },
-  });
-
-  if (albumReleaseYear && albumReleaseYear.first_release_date_year) {
-    return { type: "success", value: albumReleaseYear.first_release_date_year };
-  }
-  return {
-    type: "failure",
-    error: "Chosen album does not have a release year set",
-  };
-}
-
-export async function getArtistGenre(
-  artistID: number,
-): Promise<Result<number>> {
-  const artistGenre = await prisma.artist_tag.findFirst({
-    where: {
-      artist: artistID,
-    },
-    select: {
-      tag: true,
-    },
-    orderBy: {
-      count: "desc",
-    },
-  });
-
-  if (!artistGenre) {
-    return { type: "failure", error: "Artist has no genres set" };
-  }
-  return { type: "success", value: artistGenre.tag };
-}
-
-export async function getAlbumsOfGenre(
-  genre: number,
-): Promise<Result<number[]>> {
-  const albums = await prisma.release_group_tag.findMany({
-    where: {
-      tag: genre,
-    },
-    select: {
-      release_group: true,
-    },
-  });
-  const filteredAlbums = albums.map((album) => album.release_group);
-  if (filteredAlbums.length === 0) {
-    return { type: "failure", error: "No albums of specified genre found" };
-  }
-
-  return { type: "success", value: filteredAlbums };
-}
-
-
-export async function getAlbumsbyYear(year: number): Promise<Result<number[]>> {
-  const albums = await prisma.release_group_meta.findMany({
-    where: {
-      first_release_date_year: year
-    },
-    select: {
-      id: true
-    }
-  })
-  const albumArray = albums.map(album => album.id)
-  if (albumArray.length === 0) {
-    return {type: 'failure', error: 'No albums launched in that year found'}
-  }
-
-  return {type: 'success', value: albumArray}
-}
-
-export async function getAlbumsNames(albums: number[]): Promise<Result<string[]>> {
-  const albumNames = (
-    await Promise.all(
-      albums.map(async (album) => {
-        const albumName = await getAlbumName(album)
-        if (albumName.type === 'success') {
-          return albumName.value;
-        }
-        return null;
       })
-    )
-  ).filter((album): album is string => album !== null);
-
-  if (albumNames.length === 0) {
-    return { type: "failure", error: "No album names found" };
-  }
-
-  return { type: "success", value: albumNames };
+    )).filter((album): album is number => album !== null);
+    return filteredAlbums;
+  }, `Failed to filter studio albums`);
 }
 
-export async function getAlbumName(album: number): Promise<Result<string>> {
-  const albumName = await prisma.release_group.findFirst({
-    where:{
-      id: album
-    },
-    select: {
-      name: true
+export async function getArtistStartYear(artistID: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const startYear = await prisma.artist.findFirst({
+      where: { id: artistID },
+      select: { begin_date_year: true },
+    });
+    if (!startYear || !startYear.begin_date_year) {
+      throw new Error("Artist does not have a start year");
     }
-  })
-  if (!albumName) {
-    return {type:'failure', error: 'Artist has no name'}
-  }
-  return {type: 'success', value: albumName.name}
+    return startYear.begin_date_year;
+  }, `Failed to get start year for artist ${artistID}`);
 }
 
-
-export async function getReleaseId(releaseGroup: number): Promise<Result<number>> {
-  const releaseID = await prisma.release.findFirst({
-    where: {
-      release_group: releaseGroup
-    },
-    select: {
-      id: true
+export async function getAlbumReleaseYear(album: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const albumReleaseYear = await prisma.release_group_meta.findFirst({
+      where: { id: album },
+      select: { first_release_date_year: true },
+    });
+    if (!albumReleaseYear || !albumReleaseYear.first_release_date_year) {
+      throw new Error("Chosen album does not have a release year set");
     }
-  })
-
-  if (!releaseID) {
-    return {type:"failure", error: 'Release group has no releases'}
-  }
-
-  return {type:'success', value: releaseID.id}
+    return albumReleaseYear.first_release_date_year;
+  }, `Failed to get release year for album ${album}`);
 }
 
 
-export async function getMediumId(release: number): Promise<Result<number>> {
-  const medium = await prisma.medium.findFirst({
-    where: {
-      release: release
-    },
-    select: {
-      id: true
+export async function getArtistGenre(artistID: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const artistGenre = await prisma.artist_tag.findFirst({
+      where: { artist: artistID },
+      select: { tag: true },
+      orderBy: { count: "desc" },
+    });
+    if (!artistGenre) {
+      throw new Error("Artist has no genres set");
     }
-  })
+    return artistGenre.tag;
+  }, `Failed to get genre for artist ${artistID}`);
+}
 
-  if (!medium) {
-    return {type: 'failure', error: 'Release does not have a medium'}
-  }
+export async function getAlbumsOfGenre(genre: number): Promise<number[]> {
+  return handleDatabaseQuery(async () => {
+    const albums = await prisma.release_group_tag.findMany({
+      where: { tag: genre },
+      select: { release_group: true },
+    });
+    if (albums.length === 0) {
+      throw new Error("No albums of specified genre found");
+    }
+    return albums.map(album => album.release_group);
+  }, `Failed to get albums of genre ${genre}`);
+}
 
-  return {type: 'success', value: medium.id}
+export async function getAlbumsbyYear(year: number): Promise<number[]> {
+  return handleDatabaseQuery(async () => {
+    const albums = await prisma.release_group_meta.findMany({
+      where: { first_release_date_year: year },
+      select: { id: true },
+    });
+    if (albums.length === 0) {
+      throw new Error("No albums launched in that year found");
+    }
+    return albums.map(album => album.id);
+  }, `Failed to get albums from year ${year}`);
+}
+
+export async function getAlbumsNames(albums: number[]): Promise<string[]> {
+  return handleDatabaseQuery(async () => {
+    const albumNames = await Promise.all(
+      albums.map(async (album) => {
+        const name = await getAlbumName(album);
+        if (!name) throw new Error("One of the albums does not have a name");
+        return name;
+      })
+    );
+    return albumNames;
+  }, "Failed to get names for albums");
+}
+
+export async function getAlbumName(album: number): Promise<string> {
+  return handleDatabaseQuery(async () => {
+    const albumName = await prisma.release_group.findFirst({
+      where: { id: album },
+      select: { name: true },
+    });
+    if (!albumName) {
+      throw new Error("Album has no name");
+    }
+    return albumName.name;
+  }, `Failed to get name for album ${album}`);
+}
+
+export async function getReleaseId(releaseGroup: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const releaseID = await prisma.release.findFirst({
+      where: { release_group: releaseGroup },
+      select: { id: true },
+    });
+    if (!releaseID) {
+      throw new Error("Release group has no releases");
+    }
+    return releaseID.id;
+  }, `Failed to get release ID for release group ${releaseGroup}`);
+}
+
+export async function getMediumId(release: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const medium = await prisma.medium.findFirst({
+      where: { release: release },
+      select: { id: true },
+    });
+    if (!medium) {
+      throw new Error("Release does not have a medium");
+    }
+    return medium.id;
+  }, `Failed to get medium ID for release ${release}`);
 }
 
 export async function getTrackIDsByMedium(mediumID: number): Promise<number[]> {
-  const tracks = await prisma.track.findMany({
-    where: {
-      medium: mediumID
-    },
-    select: {
-      id: true
-    }
-  })
-
-  const trackIDs = tracks.map(track => track.id)
-
-  return trackIDs
+  return handleDatabaseQuery(async () => {
+    const tracks = await prisma.track.findMany({
+      where: { medium: mediumID },
+      select: { id: true },
+    });
+    return tracks.map(track => track.id);
+  }, `Failed to get track IDs for medium ${mediumID}`);
 }
 
-export async function getReleaseIDS(release_groups: number[]): Promise<Result<number[]>> {
-  const releaseIDS = (await Promise.all(
-    release_groups.map(async (releaseGroup) => {
-      const release_id = await getReleaseId(releaseGroup)
-      if (release_id.type === 'success') {
-        return release_id.value
-      }
-      return null
-    })
-  )).filter((id): id is number => id !== null)
-
-  if (releaseIDS.length === 0) {
-    return {type: 'failure', error: 'Not releases found'}
-  }
-
-  return {type: 'success', value: releaseIDS}
-
+export async function getReleaseIDS(release_groups: number[]): Promise<number[]> {
+  return handleDatabaseQuery(async () => {
+    const releaseIDS = await Promise.all(
+      release_groups.map(async (releaseGroup) => {
+        const release_id = await getReleaseId(releaseGroup);
+        return release_id;
+      })
+    );
+    return releaseIDS;
+  }, "Failed to get release IDs");
 }
 
-export async function getMediumsbyReleaseIDs(releases: number[]): Promise<Result<number[]>> {
-  const mediums = (await Promise.all(
-    releases.map(async (release) => {
-      const medium = await getMediumId(release)
-      if (medium.type === 'success') {
-        return medium.value
-      }
-      return null
-    })
-  )).filter((medium): medium is number => medium !== null)
-
-  if (mediums.length === 0) {
-    return {type:'failure', error: 'No mediums found'}
-  }
-
-  return {type:'success', value: mediums}
+export async function getMediumsbyReleaseIDs(releases: number[]): Promise<number[]> {
+  return handleDatabaseQuery(async () => {
+    const mediums = await Promise.all(
+      releases.map(async (release) => {
+        const medium = await getMediumId(release);
+        return medium;
+      })
+    );
+    return mediums;
+  }, "Failed to get mediums by release IDs");
 }
 
 export async function getTracksbyMediumIDS(mediums: number[]): Promise<number[]> {
-  const tracksIDS = await Promise.all(
-    mediums.map(async (medium) => {
-      const tracks = await getTrackIDsByMedium(medium)
-      return tracks
-    })
-  )
-  const flattenedArray  =  tracksIDS.flat()
-  return flattenedArray
+  return handleDatabaseQuery(async () => {
+    const trackIDS = await Promise.all(
+      mediums.map(async (medium) => {
+        return await getTrackIDsByMedium(medium);
+      })
+    );
+    return trackIDS.flat();
+  }, "Failed to get tracks by medium IDs");
 }
 
-export async function getTrackNamebyID(track: number): Promise<Result<string>> {
-  const trackName = await prisma.track.findFirst({
-    where: {
-      id: track
-    },
-    select: {
-      name: true
+export async function getTrackNamebyID(track: number): Promise<string> {
+  return handleDatabaseQuery(async () => {
+    const trackName = await prisma.track.findFirst({
+      where: { id: track },
+      select: { name: true },
+    });
+    if (!trackName) {
+      throw new Error("Track has no name");
     }
-  })
-
-  if (!trackName) {
-    return {type: 'failure', error: 'No name found for track'}
-  }
-  return {type: 'success', value: trackName.name}
+    return trackName.name;
+  }, `Failed to get name for track ${track}`);
 }
 
-export async function getTrackNamesbyIDS(tracks: number[]): Promise<Result<string[]>> {
-  const trackNames =(await Promise.all(
-    tracks.map(async (track) => {
-      const trackName = await getTrackNamebyID(track)
-      if (trackName.type === 'success') {
-        return trackName.value
-      }
-      return null
-    })
-  )).filter((track): track is string => track !== null)
-
-  if (trackNames.length === 0) {
-    return {type:'failure', error: 'No track names found'}
-  }
-  return {type: 'success', value: trackNames}
+export async function getTrackNamesbyIDS(tracks: number[]): Promise<string[]> {
+  return handleDatabaseQuery(async () => {
+    const trackNames = await Promise.all(
+      tracks.map(async (track) => {
+        const name = await getTrackNamebyID(track);
+        return name;
+      })
+    );
+    return trackNames;
+  }, "Failed to get track names by IDs");
 }
