@@ -12,14 +12,26 @@ export interface SearchResultsProps {
 }
 
 export function SearchResult(props: SearchResultsProps) {
-  const router = useRouter()
- 
+  const router = useRouter();
+
   let imageUrl = props.imageURL;
   if (!props.imageURL) {
     imageUrl = "/default.png";
   }
   return (
-    <button onClick={() => void router.push("/Quiz?artistID=" + props.artistID + "&artistName=" + props.artistName)} className="group relative h-[322px] w-[640px] bg-cover ">
+    <button
+      onClick={() =>
+        void router.push(
+          "/Quiz?artistID=" +
+            encodeURIComponent(props.artistID) +
+            "&artistName=" +
+            encodeURIComponent(props.artistName) +
+            "&imageURL=" +
+            encodeURIComponent(props.imageURL),
+        )
+      }
+      className="group relative h-[322px] w-[640px] bg-cover "
+    >
       <Image
         src={imageUrl}
         fill={true}
@@ -28,9 +40,7 @@ export function SearchResult(props: SearchResultsProps) {
       ></Image>
       <div className="absolute inset-0 bg-black opacity-75"></div>
       <div className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-300 ease-in-out group-hover:opacity-100">
-        <p
-          className="font-['Metropolis'] text-[64px] font-normal text-white"
-        >
+        <p className="font-['Metropolis'] text-[64px] font-normal text-white">
           {props.description}
         </p>
       </div>
@@ -43,7 +53,7 @@ export function SearchResult(props: SearchResultsProps) {
         </p>
         <Flag
           country={props.countryCode}
-          className="h-[4.1875rem] w-[4.1875rem] flex-shrink-0 transform -translate-y-[1rem]"
+          className="h-[4.1875rem] w-[4.1875rem] flex-shrink-0 -translate-y-[1rem] transform"
         />
       </div>
     </button>

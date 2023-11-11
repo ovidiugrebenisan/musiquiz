@@ -3,13 +3,14 @@ import Link from "next/link";
 import { AnswerButton } from "~/components/AnswerButton";
 import { useRouter } from "next/router";
 import {useState} from "react"
+import Image from "next/image";
 
 export default function Quiz() {
   const [questionNumber, setQuestionNumber] = useState(0)
   const [isAnswerSelected, setIsAnswerSelected] = useState(false)
   const router = useRouter();
-  const  {artistID, artistName} = router.query;
-
+  const  {artistID, artistName, imageURL} = router.query;
+  console.log(imageURL)
   console.log(artistID)
   console.log(artistName)
   if (!artistID || !artistName || Array.isArray(artistID) || Array.isArray(artistName)) {
@@ -27,6 +28,8 @@ export default function Quiz() {
     return <Link href="/Search">Back to Search</Link>;
   }
 
+  const imageSrc = imageURL && !Array.isArray(imageURL) ? imageURL : "./default.png"
+
   const quizData = quiz.data[questionNumber]
 
 
@@ -43,8 +46,12 @@ export default function Quiz() {
     setQuestionNumber((prev) => prev + 1)
   }
 
+  console.log(imageSrc)
+
   return (
-   <>
+    <>
+   <Image className="saturate-0" src={imageSrc} alt="Artist image" fill={true}/>
+   <div className="absolute inset-0 bg-black opacity-75"></div>
       <p
         className="absolute left-1/2 top-1/4 h-[110px] w-[1160px] -translate-x-1/2 -translate-y-1/2
                   text-center font-metropolis text-[64px] font-black leading-none text-white"
