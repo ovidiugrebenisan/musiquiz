@@ -5,7 +5,6 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev ",
-    "postinstall": " prisma generate --schema ./prisma/mbdb/mb.prisma &&   prisma generate --schema ./prisma/mqdb/mq.prisma",
     "lint": "next lint",
     "start": "next start"
   },
