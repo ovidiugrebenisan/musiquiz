@@ -7,7 +7,10 @@ import type {
 import { Redis } from "@upstash/redis";
 import { shuffleArray } from "~/utils/helper_functions";
 import * as countries from "i18n-iso-countries";
-import { getArtistBackgroundImageURL } from "~/server/lib/SearchResults/functions";
+import {
+  getArtistBackgroundImageURL,
+  getArtistLogo,
+} from "~/server/lib/SearchResults/functions";
 import {
   whichAlbumBelongsArtist,
   whichAlbumSongBelongs,
@@ -41,6 +44,26 @@ export const getArtistData = createTRPCRouter({
       }
       return null;
     }),
+
+  getArtistLogo: publicProcedure.input(z.string()).query(async ({ ctx, input }) => {
+    const artistID = Number(input);
+    const artistGID = await ctx.mbdb.artist.findFirst({
+      where: {
+        id: artistID,
+      },
+      select: {
+        gid: true,
+      },
+    });
+    if (artistGID?.gid) {
+    const artistLogo = await getArtistLogo(artistGID.gid);
+    console.log(artistLogo)
+    if (artistLogo) {
+      return artistLogo;
+    }
+  }
+  return null
+  }),
 
   getSearchResultData: publicProcedure
     .input(z.string())
