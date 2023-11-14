@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 
 interface AnswerButtonProps {
   option: number | string;
-  correct: number | string;
   onAnswerSelected: () => void;
   onProceedToNext: () => void;
   disabled: boolean;
@@ -15,7 +14,6 @@ export function AnswerButton(props: AnswerButtonProps) {
     setCorrectAnswer(null)
   }, [props.option])
   function handleClick() {
-    const isCorrect = props.option === props.correct;
     setCorrectAnswer(isCorrect);
     props.onAnswerSelected()
 

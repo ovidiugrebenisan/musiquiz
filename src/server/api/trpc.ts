@@ -13,6 +13,7 @@ import { ZodError } from "zod";
 import { mbdb } from "~/server/db/mbdb";
 import type { SignedInAuthObject, SignedOutAuthObject } from "@clerk/nextjs/dist/types/server";
 import { getAuth } from "@clerk/nextjs/server";
+import { mqdb } from "../db/mqdb";
 
 /**
  * 1. CONTEXT
@@ -39,6 +40,7 @@ interface AuthContext {
 const createInnerTRPCContext = ({ auth }: AuthContext) => {
   return {
     mbdb,
+    mqdb,
     auth
   };
 };
