@@ -24,7 +24,7 @@ export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
     .input(z.string())
     .query(async ({ ctx, input }) => {
-      const artist = await ctx.prisma.artist.findMany({
+      const artist = await ctx.mbdb.artist.findMany({
         where: {
           name: {
             startsWith: input,
@@ -45,7 +45,7 @@ export const getArtistData = createTRPCRouter({
   getSearchResultData: publicProcedure
     .input(z.string())
     .query(async ({ ctx, input }) => {
-      const artists = await ctx.prisma.artist.findMany({
+      const artists = await ctx.mbdb.artist.findMany({
         where: {
           name: input,
         },
@@ -57,7 +57,7 @@ export const getArtistData = createTRPCRouter({
 
       if (artists) {
         for (const artist of artists) {
-          const artistData = await ctx.prisma.artist.findFirst({
+          const artistData = await ctx.mbdb.artist.findFirst({
             where: {
               id: artist.id,
             },
@@ -74,7 +74,7 @@ export const getArtistData = createTRPCRouter({
           let country: string | null = "";
 
           if (artistData?.area) {
-            const artistCountry = await ctx.prisma.area.findFirst({
+            const artistCountry = await ctx.mbdb.area.findFirst({
               where: {
                 id: artistData.area,
               },

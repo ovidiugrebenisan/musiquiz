@@ -25,9 +25,7 @@ export function SearchResult(props: SearchResultsProps) {
           "/Quiz?artistID=" +
             encodeURIComponent(props.artistID) +
             "&artistName=" +
-            encodeURIComponent(props.artistName) +
-            "&imageURL=" +
-            encodeURIComponent(props.imageURL),
+            encodeURIComponent(props.artistName)
         )
       }
       className="group relative h-[322px] w-[640px] bg-cover "

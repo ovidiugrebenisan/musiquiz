@@ -1,4 +1,4 @@
-import { prisma } from "~/server/db";
+import { mbdb } from "~/server/db/mbdb";
 
 async function handleDatabaseQuery<T>(
   queryFunction: () => Promise<T>,
@@ -17,7 +17,7 @@ async function handleDatabaseQuery<T>(
 
 export async function getArtistStudioAlbums(artistID: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
-    const artistAlbums = await prisma.release_group.findMany({
+    const artistAlbums = await mbdb.release_group.findMany({
       where: { artist_credit: artistID, type: 1 },
       select: { id: true },
     });
@@ -29,7 +29,7 @@ export async function getStudioAlbumsNoSec(albums: number[]): Promise<number[]> 
   return handleDatabaseQuery(async () => {
     const filteredAlbums = (await Promise.all(
       albums.map(async (album) => {
-        const isNotStudio = await prisma.release_group_secondary_type_join.findFirst({
+        const isNotStudio = await mbdb.release_group_secondary_type_join.findFirst({
           where: { release_group: album },
         });
         return isNotStudio ? null : album;
@@ -41,7 +41,7 @@ export async function getStudioAlbumsNoSec(albums: number[]): Promise<number[]> 
 
 export async function getArtistStartYear(artistID: number): Promise<number> {
   return handleDatabaseQuery(async () => {
-    const startYear = await prisma.artist.findFirst({
+    const startYear = await mbdb.artist.findFirst({
       where: { id: artistID },
       select: { begin_date_year: true },
     });
@@ -54,7 +54,7 @@ export async function getArtistStartYear(artistID: number): Promise<number> {
 
 export async function getAlbumReleaseYear(album: number): Promise<number> {
   return handleDatabaseQuery(async () => {
-    const albumReleaseYear = await prisma.release_group_meta.findFirst({
+    const albumReleaseYear = await mbdb.release_group_meta.findFirst({
       where: { id: album },
       select: { first_release_date_year: true },
     });
@@ -68,7 +68,7 @@ export async function getAlbumReleaseYear(album: number): Promise<number> {
 
 export async function getArtistGenre(artistID: number): Promise<number> {
   return handleDatabaseQuery(async () => {
-    const artistGenre = await prisma.artist_tag.findFirst({
+    const artistGenre = await mbdb.artist_tag.findFirst({
       where: { artist: artistID },
       select: { tag: true },
       orderBy: { count: "desc" },
@@ -82,7 +82,7 @@ export async function getArtistGenre(artistID: number): Promise<number> {
 
 export async function getAlbumsOfGenre(genre: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
-    const albums = await prisma.release_group_tag.findMany({
+    const albums = await mbdb.release_group_tag.findMany({
       where: { tag: genre },
       select: { release_group: true },
     });
@@ -95,7 +95,7 @@ export async function getAlbumsOfGenre(genre: number): Promise<number[]> {
 
 export async function getAlbumsbyYear(year: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
-    const albums = await prisma.release_group_meta.findMany({
+    const albums = await mbdb.release_group_meta.findMany({
       where: { first_release_date_year: year },
       select: { id: true },
     });
@@ -121,7 +121,7 @@ export async function getAlbumsNames(albums: number[]): Promise<string[]> {
 
 export async function getAlbumName(album: number): Promise<string> {
   return handleDatabaseQuery(async () => {
-    const albumName = await prisma.release_group.findFirst({
+    const albumName = await mbdb.release_group.findFirst({
       where: { id: album },
       select: { name: true },
     });
@@ -134,7 +134,7 @@ export async function getAlbumName(album: number): Promise<string> {
 
 export async function getReleaseId(releaseGroup: number): Promise<number> {
   return handleDatabaseQuery(async () => {
-    const releaseID = await prisma.release.findFirst({
+    const releaseID = await mbdb.release.findFirst({
       where: { release_group: releaseGroup },
       select: { id: true },
     });
@@ -147,7 +147,7 @@ export async function getReleaseId(releaseGroup: number): Promise<number> {
 
 export async function getMediumId(release: number): Promise<number> {
   return handleDatabaseQuery(async () => {
-    const medium = await prisma.medium.findFirst({
+    const medium = await mbdb.medium.findFirst({
       where: { release: release },
       select: { id: true },
     });
@@ -160,7 +160,7 @@ export async function getMediumId(release: number): Promise<number> {
 
 export async function getTrackIDsByMedium(mediumID: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
-    const tracks = await prisma.track.findMany({
+    const tracks = await mbdb.track.findMany({
       where: { medium: mediumID },
       select: { id: true },
     });
@@ -205,7 +205,7 @@ export async function getTracksbyMediumIDS(mediums: number[]): Promise<number[]>
 
 export async function getTrackNamebyID(track: number): Promise<string> {
   return handleDatabaseQuery(async () => {
-    const trackName = await prisma.track.findFirst({
+    const trackName = await mbdb.track.findFirst({
       where: { id: track },
       select: { name: true },
     });

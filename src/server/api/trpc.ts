@@ -10,7 +10,7 @@ import { initTRPC } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { prisma } from "~/server/db";
+import { mbdb } from "~/server/db/mbdb";
 import type { SignedInAuthObject, SignedOutAuthObject } from "@clerk/nextjs/dist/types/server";
 import { getAuth } from "@clerk/nextjs/server";
 
@@ -38,7 +38,7 @@ interface AuthContext {
  */
 const createInnerTRPCContext = ({ auth }: AuthContext) => {
   return {
-    prisma,
+    mbdb,
     auth
   };
 };
