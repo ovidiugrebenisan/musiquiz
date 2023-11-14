@@ -57,7 +57,6 @@ export const getArtistData = createTRPCRouter({
     });
     if (artistGID?.gid) {
     const artistLogo = await getArtistLogo(artistGID.gid);
-    console.log(artistLogo)
     if (artistLogo) {
       return artistLogo;
     }
