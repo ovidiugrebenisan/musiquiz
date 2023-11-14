@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../../node_modules/@mbdb";
+import { PrismaClient } from "../../../prisma/mbdb/@mbdb";
 import { env } from "~/env.mjs";
 
 const globalForPrisma = globalThis as unknown as {
