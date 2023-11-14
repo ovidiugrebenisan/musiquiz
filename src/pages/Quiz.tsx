@@ -1,14 +1,12 @@
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { AnswerButton } from "~/components/AnswerButton";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import Image from "next/image";
 import { TextAnswerButton } from "~/components/TextAnswerButton";
 
 export default function Quiz() {
-  const [questionNumber, setQuestionNumber] = useState(0);
-  const [isAnswerSelected, setIsAnswerSelected] = useState(false);
+  const [questionNumber] = useState(0);
   const router = useRouter();
   const { artistID, artistName } = router.query;
 

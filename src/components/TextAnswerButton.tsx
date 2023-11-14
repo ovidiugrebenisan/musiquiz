@@ -1,6 +1,6 @@
 type Props = {
   ButtonLabel: string;
-  Answer: string | number
+  Answer: string | number | undefined
 };
 
 export function TextAnswerButton(props: Props) {
