@@ -132,6 +132,11 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
+        "value": "windows",
+        "native": true
+      },
+      {
+        "fromEnvVar": null,
         "value": "rhel-openssl-1.0.x"
       }
     ],
@@ -158,8 +163,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "Z2VuZXJhdG9yIGNsaWVudCB7DQogIHByb3ZpZGVyICAgICAgICA9ICJwcmlzbWEtY2xpZW50LWpzIg0KICBvdXRwdXQgPSAiQG1xZGIiDQogIGJpbmFyeVRhcmdldHMgPSAicmhlbC1vcGVuc3NsLTEuMC54Ig0KfQ0KDQpkYXRhc291cmNlIGRiIHsNCiAgcHJvdmlkZXIgPSAicG9zdGdyZXNxbCINCiAgdXJsICAgICAgPSBlbnYoIkRBVEFCQVNFX1VSTF9NUSIpDQp9DQoNCm1vZGVsIFVzZXIgew0KICBpZCAgICBJbnQgICAgIEBpZCBAZGVmYXVsdChhdXRvaW5jcmVtZW50KCkpDQogIGVtYWlsIFN0cmluZyAgQHVuaXF1ZQ0KICBuYW1lICBTdHJpbmc/DQp9",
-  "inlineSchemaHash": "3026eb1d224ee4d26f5d1f96887edeee621781dba6e6f438de103ee7908fa561",
+  "inlineSchema": "Z2VuZXJhdG9yIGNsaWVudCB7DQogIHByb3ZpZGVyICAgICAgICA9ICJwcmlzbWEtY2xpZW50LWpzIg0KICBvdXRwdXQgPSAiQG1xZGIiDQogIGJpbmFyeVRhcmdldHMgPSBbIm5hdGl2ZSIsICJyaGVsLW9wZW5zc2wtMS4wLngiXQ0KfQ0KDQpkYXRhc291cmNlIGRiIHsNCiAgcHJvdmlkZXIgPSAicG9zdGdyZXNxbCINCiAgdXJsICAgICAgPSBlbnYoIkRBVEFCQVNFX1VSTF9NUSIpDQp9DQoNCm1vZGVsIFVzZXIgew0KICBpZCAgICBJbnQgICAgIEBpZCBAZGVmYXVsdChhdXRvaW5jcmVtZW50KCkpDQogIGVtYWlsIFN0cmluZyAgQHVuaXF1ZQ0KICBuYW1lICBTdHJpbmc/DQp9",
+  "inlineSchemaHash": "5e7fbacaa35f0e2550af147f9acd4578ed7f1580abc49b35ef739a11f7fc39d9",
   "noEngine": false
 }
 
@@ -195,6 +200,10 @@ warnEnvConflicts({
 const PrismaClient = getPrismaClient(config)
 exports.PrismaClient = PrismaClient
 Object.assign(exports, Prisma)
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "query_engine-windows.dll.node");
+path.join(process.cwd(), "prisma/mqdb/@mqdb/query_engine-windows.dll.node")
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-rhel-openssl-1.0.x.so.node");
