@@ -131,8 +131,7 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
-        "native": true
+        "value": "rhel-openssl-1.0.x"
       }
     ],
     "previewFeatures": [],
@@ -158,8 +157,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "Z2VuZXJhdG9yIGNsaWVudCB7DQogIHByb3ZpZGVyICAgICAgICA9ICJwcmlzbWEtY2xpZW50LWpzIg0KICBvdXRwdXQgPSAiQG1xZGIiDQp9DQoNCmRhdGFzb3VyY2UgZGIgew0KICBwcm92aWRlciA9ICJwb3N0Z3Jlc3FsIg0KICB1cmwgICAgICA9IGVudigiREFUQUJBU0VfVVJMX01RIikNCn0NCg0KbW9kZWwgVXNlciB7DQogIGlkICAgIEludCAgICAgQGlkIEBkZWZhdWx0KGF1dG9pbmNyZW1lbnQoKSkNCiAgZW1haWwgU3RyaW5nICBAdW5pcXVlDQogIG5hbWUgIFN0cmluZz8NCn0=",
-  "inlineSchemaHash": "1376b82ae40fdd46bdb312a3d9d9ef215bc2f199d78931668edd385e756bafd8",
+  "inlineSchema": "Z2VuZXJhdG9yIGNsaWVudCB7DQogIHByb3ZpZGVyICAgICAgICA9ICJwcmlzbWEtY2xpZW50LWpzIg0KICBvdXRwdXQgPSAiQG1xZGIiDQogIGJpbmFyeVRhcmdldHMgPSAicmhlbC1vcGVuc3NsLTEuMC54Ig0KfQ0KDQpkYXRhc291cmNlIGRiIHsNCiAgcHJvdmlkZXIgPSAicG9zdGdyZXNxbCINCiAgdXJsICAgICAgPSBlbnYoIkRBVEFCQVNFX1VSTF9NUSIpDQp9DQoNCm1vZGVsIFVzZXIgew0KICBpZCAgICBJbnQgICAgIEBpZCBAZGVmYXVsdChhdXRvaW5jcmVtZW50KCkpDQogIGVtYWlsIFN0cmluZyAgQHVuaXF1ZQ0KICBuYW1lICBTdHJpbmc/DQp9",
+  "inlineSchemaHash": "3026eb1d224ee4d26f5d1f96887edeee621781dba6e6f438de103ee7908fa561",
   "noEngine": false
 }
 config.dirname = '/'
