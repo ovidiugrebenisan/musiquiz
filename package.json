@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "postinstall": "prisma generate --schema ./prisma/mbdb/mb.prisma && prisma generate --schema ./prisma/mqdb/mq.prisma",
     "dev": "next dev ",
     "lint": "next lint",
     "start": "next start"
