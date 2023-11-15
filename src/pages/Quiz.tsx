@@ -19,7 +19,9 @@ export default function Quiz() {
   ) {
     return <div>Loading...</div>;
   }
-  const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID)
+  const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID, {
+    refetchOnWindowFocus: false
+  })
   const quiz = api.mbdb.constructArtistQuiz.useQuery(
     { artistID, artistName },
     {
