@@ -20,6 +20,7 @@
     "@trpc/next": "^10.40.0",
     "@trpc/react-query": "^10.40.0",
     "@trpc/server": "^10.40.0",
+    "@types/uuid": "^9.0.7",
     "@upstash/redis": "^1.22.1",
     "axios": "^1.6.2",
     "i18n-iso-countries": "^7.7.0",
@@ -28,6 +29,7 @@
     "react-dom": "18.2.0",
     "react-flagkit": "^2.0.4",
     "superjson": "2.2.1",
+    "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

@@ -1,15 +1,12 @@
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
 import Image from "next/image";
 import { TextAnswerButton } from "~/components/TextAnswerButton";
 
 export default function Quiz() {
-  const [questionNumber] = useState(0);
   const router = useRouter();
   const { artistID, artistName, artistImage } = router.query;
-
 
   if (
     !artistID ||
@@ -20,8 +17,8 @@ export default function Quiz() {
     return <div>Loading...</div>;
   }
   const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID, {
-    refetchOnWindowFocus: false
-  })
+    refetchOnWindowFocus: false,
+  });
   const quiz = api.mbdb.constructArtistQuiz.useQuery(
     { artistID, artistName },
     {
@@ -30,32 +27,35 @@ export default function Quiz() {
   );
 
   if (artistLogo.isFetching || artistLogo.isLoading) {
-    return <div> Loading...</div>
+    return <div> Loading...</div>;
   }
 
-let logoSrc = "/default.png"
-console.log(artistLogo.data)
-if (artistLogo.data) {
-  logoSrc = artistLogo.data
-}
+  let logoSrc = "/default.png";
+  if (artistLogo.data) {
+    logoSrc = artistLogo.data;
+  }
 
   if (quiz.isFetching || quiz.isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!quiz.data || questionNumber >= quiz.data.length) {
+  if (quiz.error) {
+    return <div>Something went wrong</div>
+  }
+
+  if (!quiz.data) {
     return <Link href="/Search">Back to Search</Link>;
   }
 
-  const quizData = quiz.data[questionNumber];
+  const quizData = quiz.data;
 
-  const artistPicked = quizData?.question;
-  const answers = quizData?.answers as number[] | string[];
+
+  const artistPicked = quizData.question;
+  const answers = quizData.answers;
   let imageSrc = "/default.png";
   if (artistImage && !Array.isArray(artistImage)) {
     imageSrc = artistImage;
   }
-
 
   return (
     <>
@@ -65,11 +65,11 @@ if (artistLogo.data) {
           <div className="absolute left-1/2 top-0 h-[12.91vw] w-[12.91vw] origin-center -translate-x-1/2 -translate-y-1/2 rotate-[5.75deg] transform">
             <Image src="/Tape.png" alt="paper sticker" fill={true} />
           </div>
-          <div className="absolute w-[22.84vw] h-[23.63vh] top-[4.4vh] left-[2.3vw]  ">
+          <div className="absolute left-[2.3vw] top-[4.4vh] h-[23.63vh] w-[22.84vw]  ">
             <Image src={imageSrc} alt="Artist Image" fill={true} />
           </div>
-          <div className="absolute w-[20.13vw] h-[11vh] left-[3.65vw] top-[29.5vh]">
-            <Image src={logoSrc} alt="artist logo" fill={true}/>
+          <div className="absolute left-[3.65vw] top-[29.5vh] h-[11vh] w-[20.13vw]">
+            <Image src={logoSrc} alt="artist logo" fill={true} />
           </div>
         </div>
       </div>

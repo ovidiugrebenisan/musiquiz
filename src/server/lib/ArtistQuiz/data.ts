@@ -1,8 +1,11 @@
 import { mbdb } from "~/server/db/mbdb";
+import { mqdb } from "~/server/db/mqdb";
+import type { ArtistPushQuiz, ArtistQuizUserFacing } from "./definitions";
+import { v4 as uuidv4 } from "uuid";
 
 async function handleDatabaseQuery<T>(
   queryFunction: () => Promise<T>,
-  errorMessage: string
+  errorMessage: string,
 ): Promise<T> {
   try {
     return await queryFunction();
@@ -15,26 +18,33 @@ async function handleDatabaseQuery<T>(
   }
 }
 
-export async function getArtistStudioAlbums(artistID: number): Promise<number[]> {
+export async function getArtistStudioAlbums(
+  artistID: number,
+): Promise<number[]> {
   return handleDatabaseQuery(async () => {
     const artistAlbums = await mbdb.release_group.findMany({
       where: { artist_credit: artistID, type: 1 },
       select: { id: true },
     });
-    return artistAlbums.map(album => album.id);
+    return artistAlbums.map((album) => album.id);
   }, `Failed to get studio albums for artist ${artistID}`);
 }
 
-export async function getStudioAlbumsNoSec(albums: number[]): Promise<number[]> {
+export async function getStudioAlbumsNoSec(
+  albums: number[],
+): Promise<number[]> {
   return handleDatabaseQuery(async () => {
-    const filteredAlbums = (await Promise.all(
-      albums.map(async (album) => {
-        const isNotStudio = await mbdb.release_group_secondary_type_join.findFirst({
-          where: { release_group: album },
-        });
-        return isNotStudio ? null : album;
-      })
-    )).filter((album): album is number => album !== null);
+    const filteredAlbums = (
+      await Promise.all(
+        albums.map(async (album) => {
+          const isNotStudio =
+            await mbdb.release_group_secondary_type_join.findFirst({
+              where: { release_group: album },
+            });
+          return isNotStudio ? null : album;
+        }),
+      )
+    ).filter((album): album is number => album !== null);
     return filteredAlbums;
   }, `Failed to filter studio albums`);
 }
@@ -65,7 +75,6 @@ export async function getAlbumReleaseYear(album: number): Promise<number> {
   }, `Failed to get release year for album ${album}`);
 }
 
-
 export async function getArtistGenre(artistID: number): Promise<number> {
   return handleDatabaseQuery(async () => {
     const artistGenre = await mbdb.artist_tag.findFirst({
@@ -89,7 +98,7 @@ export async function getAlbumsOfGenre(genre: number): Promise<number[]> {
     if (albums.length === 0) {
       throw new Error("No albums of specified genre found");
     }
-    return albums.map(album => album.release_group);
+    return albums.map((album) => album.release_group);
   }, `Failed to get albums of genre ${genre}`);
 }
 
@@ -102,7 +111,7 @@ export async function getAlbumsbyYear(year: number): Promise<number[]> {
     if (albums.length === 0) {
       throw new Error("No albums launched in that year found");
     }
-    return albums.map(album => album.id);
+    return albums.map((album) => album.id);
   }, `Failed to get albums from year ${year}`);
 }
 
@@ -113,7 +122,7 @@ export async function getAlbumsNames(albums: number[]): Promise<string[]> {
         const name = await getAlbumName(album);
         if (!name) throw new Error("One of the albums does not have a name");
         return name;
-      })
+      }),
     );
     return albumNames;
   }, "Failed to get names for albums");
@@ -164,40 +173,46 @@ export async function getTrackIDsByMedium(mediumID: number): Promise<number[]> {
       where: { medium: mediumID },
       select: { id: true },
     });
-    return tracks.map(track => track.id);
+    return tracks.map((track) => track.id);
   }, `Failed to get track IDs for medium ${mediumID}`);
 }
 
-export async function getReleaseIDS(release_groups: number[]): Promise<number[]> {
+export async function getReleaseIDS(
+  release_groups: number[],
+): Promise<number[]> {
   return handleDatabaseQuery(async () => {
     const releaseIDS = await Promise.all(
       release_groups.map(async (releaseGroup) => {
         const release_id = await getReleaseId(releaseGroup);
         return release_id;
-      })
+      }),
     );
     return releaseIDS;
   }, "Failed to get release IDs");
 }
 
-export async function getMediumsbyReleaseIDs(releases: number[]): Promise<number[]> {
+export async function getMediumsbyReleaseIDs(
+  releases: number[],
+): Promise<number[]> {
   return handleDatabaseQuery(async () => {
     const mediums = await Promise.all(
       releases.map(async (release) => {
         const medium = await getMediumId(release);
         return medium;
-      })
+      }),
     );
     return mediums;
   }, "Failed to get mediums by release IDs");
 }
 
-export async function getTracksbyMediumIDS(mediums: number[]): Promise<number[]> {
+export async function getTracksbyMediumIDS(
+  mediums: number[],
+): Promise<number[]> {
   return handleDatabaseQuery(async () => {
     const trackIDS = await Promise.all(
       mediums.map(async (medium) => {
         return await getTrackIDsByMedium(medium);
-      })
+      }),
     );
     return trackIDS.flat();
   }, "Failed to get tracks by medium IDs");
@@ -222,8 +237,127 @@ export async function getTrackNamesbyIDS(tracks: number[]): Promise<string[]> {
       tracks.map(async (track) => {
         const name = await getTrackNamebyID(track);
         return name;
-      })
+      }),
     );
     return trackNames;
   }, "Failed to get track names by IDs");
+}
+
+export async function getUserquiz(
+  userID: string,
+): Promise<ArtistQuizUserFacing> {
+  return handleDatabaseQuery(async () => {
+    const user_quiz = await mqdb.artistQuiz.findFirst({
+      where: {
+        userId: userID,
+      },
+      select: {
+        question: true,
+        answers: true,
+        id: true,
+      },
+    });
+
+    return user_quiz as ArtistQuizUserFacing;
+  }, "Failed to query database for user artist quizzes");
+}
+
+export async function pushArtistQuiz(
+  userID: string,
+  quiz: ArtistPushQuiz,
+): Promise<boolean> {
+  return handleDatabaseQuery(async () => {
+    const uuid = uuidv4();
+    const artistQuiz = await mqdb.artistQuiz.create({
+      data: {
+        question: quiz.question,
+        answers: quiz.answers,
+        correct_answer: quiz.correct_answer,
+        userId: userID,
+        id: uuid,
+      },
+    });
+    if (artistQuiz) {
+      return true;
+    }
+    return false;
+  }, "Could not create an artist quiz");
+}
+
+export async function countQuizzes(userID: string): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const count = await mqdb.artistQuiz.count({
+      where: {
+        userId: userID,
+      },
+    });
+    return count;
+  }, "Could not count user quizzez");
+}
+
+export async function deleteQuiz(questionID: string): Promise<void> {
+  return handleDatabaseQuery(async () => {
+     await mqdb.artistQuiz.delete({
+      where: {
+        id: questionID,
+      },
+    });
+  }, "Could not delete Quiz");
+}
+
+export async function setLastQuizFlag(
+  userID: string,
+  option: boolean,
+): Promise<void> {
+  return handleDatabaseQuery(async () => {
+    await mqdb.userQuiz.upsert({
+      create: {
+        user_id: userID,
+      },
+      update: {
+        one_artist_question_remaining: option,
+      },
+      where: {
+        user_id: userID,
+      },
+    });
+  }, "Could not update last question flag");
+}
+
+export async function checkLastQuizFlag(userID: string): Promise<boolean> {
+  return handleDatabaseQuery(async () => {
+    const state = await mqdb.userQuiz.findFirst({
+      where: {
+        user_id: userID,
+      },
+      select: {
+        one_artist_question_remaining: true,
+      },
+    });
+    return state!.one_artist_question_remaining;
+  }, "Could not get last question flag state");
+}
+
+export async function checkUserExists(userID: string): Promise<boolean> {
+  return handleDatabaseQuery(async () => {
+    const user = await mqdb.userQuiz.findFirst({
+      where: {
+        user_id: userID,
+      },
+    });
+    if (user) {
+      return true;
+    }
+    return false;
+  }, "Failed searching for user");
+}
+
+export async function createUser(userID: string): Promise<void> {
+  return handleDatabaseQuery(async () => {
+    await mqdb.userQuiz.create({
+      data: {
+        user_id: userID,
+      },
+    });
+  }, "Could not create user");
 }

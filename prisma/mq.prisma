@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  output = "@mqdb"
+  provider = "prisma-client-js"
+  output   = "@mqdb"
 }
 
 datasource db {
@@ -8,8 +8,17 @@ datasource db {
   url      = env("DATABASE_URL_MQ")
 }
 
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+model UserQuiz {
+  user_id                       String       @id
+  one_artist_question_remaining Boolean      @default(false)
+  artistQuizzes                 ArtistQuiz[] @relation("UserArtistQuiz")
+}
+
+model ArtistQuiz {
+  id             String    @id
+  question       String
+  answers        String[]
+  correct_answer String
+  userQuiz       UserQuiz? @relation("UserArtistQuiz", fields: [userId], references: [user_id])
+  userId         String?
 }

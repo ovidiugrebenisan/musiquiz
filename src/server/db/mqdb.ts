@@ -1,15 +1,15 @@
 import { PrismaClient } from "./../../../prisma/@mqdb";
 import { env } from "~/env.mjs";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const globalForMQDB = globalThis as unknown as {
+  mqdbprisma: PrismaClient | undefined;
 };
 
 export const mqdb =
-  globalForPrisma.prisma ??
+  globalForMQDB.mqdbprisma ??
   new PrismaClient({
     log:
       env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
-if (env.NODE_ENV !== "production") globalForPrisma.prisma = mqdb;
+if (env.NODE_ENV !== "production") globalForMQDB.mqdbprisma = mqdb;

@@ -1,15 +1,15 @@
 import { PrismaClient } from "../../../prisma/@mbdb"
 import { env } from "~/env.mjs";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const globalForMBDB = globalThis as unknown as {
+  mbdbprisma: PrismaClient | undefined;
 };
 
 export const mbdb =
-  globalForPrisma.prisma ??
+  globalForMBDB.mbdbprisma ??
   new PrismaClient({
     log:
       env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
-if (env.NODE_ENV !== "production") globalForPrisma.prisma = mbdb;
+if (env.NODE_ENV !== "production") globalForMBDB.mbdbprisma = mbdb;

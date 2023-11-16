@@ -24,27 +24,29 @@ import {
   getMediumId,
 } from "./data";
 
-import type { StringQuestion, NumberQuestion } from "./definitions";
+import type { ArtistPushQuiz } from "./definitions";
 
 export async function whichYearArtistStarted(
   artistID: number,
   artistName: string,
-): Promise<NumberQuestion> {
+): Promise<ArtistPushQuiz> {
   const artistStartYear = await getArtistStartYear(artistID);
   const answers = generateAnswerswhichYear(artistStartYear);
   const shuffledArray = shuffleArray(answers);
+  const answersStrings = shuffledArray.map(answer => answer.toString())
   const question = `In which year was ${artistName} born/founded?`;
+  const correct_answer = artistStartYear.toString()
   return {
     question,
-    answers: shuffledArray,
-    correct_answer: artistStartYear,
+    answers: answersStrings,
+    correct_answer,
   };
 }
 
 export async function whichAlbumBelongsArtist(
   artistID: number,
   artistName: string,
-): Promise<StringQuestion> {
+): Promise<ArtistPushQuiz> {
   const studioAlbums = await getArtistStudioAlbums(artistID);
   const validStudioAlbums = await getStudioAlbumsNoSec(studioAlbums);
   const chosenAlbum = validStudioAlbums[randomNumber(validStudioAlbums.length)] as number;
@@ -68,7 +70,7 @@ export async function whichAlbumBelongsArtist(
 
 export async function whichAlbumSongBelongs(
   artistID: number,
-): Promise<StringQuestion> {
+): Promise<ArtistPushQuiz> {
   const studioAlbums = await getArtistStudioAlbums(artistID);
   const filteredAlbums = await getStudioAlbumsNoSec(studioAlbums);
   const chosenAlbum = filteredAlbums[randomNumber(filteredAlbums.length)] as number;
@@ -90,7 +92,7 @@ export async function whichAlbumSongBelongs(
 
 export async function whichYearAlbum(
   artistID: number,
-): Promise<NumberQuestion> {
+): Promise<ArtistPushQuiz> {
   const artistAlbums = await getArtistStudioAlbums(artistID);
   const artistStudioAlbums = await getStudioAlbumsNoSec(artistAlbums);
   const chosenAlbum = artistStudioAlbums[randomNumber(artistStudioAlbums.length)] as number;
@@ -98,12 +100,14 @@ export async function whichYearAlbum(
   const chosenAlbumYear = await getAlbumReleaseYear(chosenAlbum);
   const answers = generateAnswerswhichYear(chosenAlbumYear);
   const shuffledAnswers = shuffleArray(answers);
+  const stringAnswers = shuffledAnswers.map(answer => answer.toString())
   const question = `In which year was the album ${chosenAlbumName} released?`;
+  const correct_answer = chosenAlbumYear.toString()
   return {
     question,
-    answers: shuffledAnswers,
-    correct_answer: chosenAlbumYear,
+    answers: stringAnswers,
+    correct_answer
   };
 }
 
-// Continue refactoring the rest of the functions in the same manner
+

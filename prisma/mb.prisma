@@ -7,7 +7,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL_MB")
-  schemas  = ["cover_art_archive", "musicbrainz", "musiquiz"]
+  schemas  = ["cover_art_archive", "musicbrainz"]
 }
 
 model art_type {

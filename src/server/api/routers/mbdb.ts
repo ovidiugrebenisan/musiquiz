@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import type {
-  StringQuestion,
-  NumberQuestion,
-} from "~/server/lib/ArtistQuiz/definitions";
-import { Redis } from "@upstash/redis";
-import { shuffleArray } from "~/utils/helper_functions";
+
 import * as countries from "i18n-iso-countries";
 import {
   getArtistBackgroundImageURL,
@@ -17,11 +12,16 @@ import {
   whichYearAlbum,
   whichYearArtistStarted,
 } from "~/server/lib/ArtistQuiz/functions";
-type QuizItem = StringQuestion | NumberQuestion;
-
-type Quiz = QuizItem[];
-
-const redis = Redis.fromEnv();
+import {
+  checkLastQuizFlag,
+  checkUserExists,
+  countQuizzes,
+  createUser,
+  deleteQuiz,
+  getUserquiz,
+  pushArtistQuiz,
+  setLastQuizFlag,
+} from "~/server/lib/ArtistQuiz/data";
 
 export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
@@ -45,24 +45,26 @@ export const getArtistData = createTRPCRouter({
       return null;
     }),
 
-  getArtistLogo: publicProcedure.input(z.string()).query(async ({ ctx, input }) => {
-    const artistID = Number(input);
-    const artistGID = await ctx.mbdb.artist.findFirst({
-      where: {
-        id: artistID,
-      },
-      select: {
-        gid: true,
-      },
-    });
-    if (artistGID?.gid) {
-    const artistLogo = await getArtistLogo(artistGID.gid);
-    if (artistLogo) {
-      return artistLogo;
-    }
-  }
-  return null
-  }),
+  getArtistLogo: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      const artistID = Number(input);
+      const artistGID = await ctx.mbdb.artist.findFirst({
+        where: {
+          id: artistID,
+        },
+        select: {
+          gid: true,
+        },
+      });
+      if (artistGID?.gid) {
+        const artistLogo = await getArtistLogo(artistGID.gid);
+        if (artistLogo) {
+          return artistLogo;
+        }
+      }
+      return null;
+    }),
 
   getSearchResultData: publicProcedure
     .input(z.string())
@@ -135,50 +137,86 @@ export const getArtistData = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const quiz: Quiz = [];
-
       try {
         if (ctx.auth.userId) {
-          const quiz_exists = (await redis.json.get(ctx.auth.userId)) as Quiz;
+          console.log(ctx.auth.userId)
+          const user_exists = await checkUserExists(ctx.auth.userId);
+          console.log(user_exists)
+          if (!user_exists) {
+            await createUser(ctx.auth.userId);
+          }
+          const check_lastq_flag = await checkLastQuizFlag(ctx.auth.userId);
+          if (check_lastq_flag) {
+            await setLastQuizFlag(ctx.auth.userId, false);
+            return null;
+          }
+          const quiz_count = await countQuizzes(ctx.auth.userId);
+          if (quiz_count > 1) {
+            const user_quiz = await getUserquiz(ctx.auth.userId);
+            await deleteQuiz(user_quiz.id);
+
+            return user_quiz;
+          }
+          if (quiz_count === 1) {
+            const user_quiz = await getUserquiz(ctx.auth.userId);
+            await deleteQuiz(user_quiz.id);
+            await setLastQuizFlag(ctx.auth.userId, true);
+            return user_quiz;
+          }
+
+          const quizzes_pushed = 0;
           const artistID = Number(input.artistID);
           const artistName = input.artistName;
-          if (!quiz_exists) {
-            const beginDateYear = await whichYearArtistStarted(
-              artistID,
-              artistName,
-            );
 
-            quiz.push(beginDateYear);
+          const beginDateYear = await whichYearArtistStarted(
+            artistID,
+            artistName,
+          );
 
-            const whichAlbumBelongsToArtist = await whichAlbumBelongsArtist(
-              artistID,
-              artistName,
-            );
-
-            quiz.push(whichAlbumBelongsToArtist);
-
-            const whichSongBelongstoAlbum =
-              await whichAlbumSongBelongs(artistID);
-            quiz.push(whichSongBelongstoAlbum);
-
-            const inWhichYearWasAlbumReleased = await whichYearAlbum(artistID);
-            quiz.push(inWhichYearWasAlbumReleased);
-
-            shuffleArray(quiz);
-            const push_quiz = await redis.json.set(
-              ctx.auth.userId,
-              "$",
-              JSON.stringify(quiz),
-            );
-            await redis.expire(ctx.auth.userId, 5);
-            if (push_quiz) {
-              return quiz;
-            } else {
-              throw new Error("Failed to save quiz to Redis.");
-            }
-          } else {
-            return quiz_exists;
+          const beginDateYearpushed = await pushArtistQuiz(
+            ctx.auth.userId,
+            beginDateYear,
+          );
+          if (beginDateYearpushed) {
+            quizzes_pushed + 1;
           }
+
+          const whichAlbumBelongsToArtist = await whichAlbumBelongsArtist(
+            artistID,
+            artistName,
+          );
+
+          const whichAlbumBelongsArtistpushed = await pushArtistQuiz(
+            ctx.auth.userId,
+            whichAlbumBelongsToArtist,
+          );
+
+          if (whichAlbumBelongsArtistpushed) {
+            quizzes_pushed + 1;
+          }
+
+          const whichSongBelongstoAlbum = await whichAlbumSongBelongs(artistID);
+          const whichSongBelongstoAlbumpushed = await pushArtistQuiz(
+            ctx.auth.userId,
+            whichSongBelongstoAlbum,
+          );
+          if (whichSongBelongstoAlbumpushed) {
+            quizzes_pushed + 1;
+          }
+
+          const inWhichYearWasAlbumReleased = await whichYearAlbum(artistID);
+          const inWhichYearWasAlbumReleasedpushed = await pushArtistQuiz(
+            ctx.auth.userId,
+            inWhichYearWasAlbumReleased,
+          );
+          if (inWhichYearWasAlbumReleasedpushed) {
+            quizzes_pushed + 1;
+          }
+          const user_quiz = await getUserquiz(ctx.auth.userId);
+          await deleteQuiz(user_quiz.id);
+
+            return user_quiz;
+          
         }
       } catch (error) {
         console.error(error);
