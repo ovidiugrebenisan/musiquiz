@@ -26,7 +26,7 @@ import {
 
 import type { ArtistPushQuiz } from "./definitions";
 
-export async function whichYearArtistStarted(
+export async function artistYear(
   artistID: number,
   artistName: string,
 ): Promise<ArtistPushQuiz> {
@@ -43,7 +43,7 @@ export async function whichYearArtistStarted(
   };
 }
 
-export async function whichAlbumBelongsArtist(
+export async function artistAlbum(
   artistID: number,
   artistName: string,
 ): Promise<ArtistPushQuiz> {
@@ -68,7 +68,7 @@ export async function whichAlbumBelongsArtist(
   };
 }
 
-export async function whichAlbumSongBelongs(
+export async function albumSong(
   artistID: number,
 ): Promise<ArtistPushQuiz> {
   const studioAlbums = await getArtistStudioAlbums(artistID);
@@ -90,7 +90,7 @@ export async function whichAlbumSongBelongs(
   };
 }
 
-export async function whichYearAlbum(
+export async function albumYear(
   artistID: number,
 ): Promise<ArtistPushQuiz> {
   const artistAlbums = await getArtistStudioAlbums(artistID);
@@ -109,5 +109,3 @@ export async function whichYearAlbum(
     correct_answer
   };
 }
-
-

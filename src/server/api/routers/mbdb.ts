@@ -7,20 +7,20 @@ import {
   getArtistLogo,
 } from "~/server/lib/SearchResults/functions";
 import {
-  whichAlbumBelongsArtist,
-  whichAlbumSongBelongs,
-  whichYearAlbum,
-  whichYearArtistStarted,
+  // artistAlbum,
+  // albumSong,
+  // albumYear,
+  artistYear,
 } from "~/server/lib/ArtistQuiz/functions";
 import {
-  checkLastQuizFlag,
+  checkActiveQuiz,
   checkUserExists,
-  countQuizzes,
   createUser,
-  deleteQuiz,
+  getQuizTypes,
   getUserquiz,
   pushArtistQuiz,
-  setLastQuizFlag,
+  pushQuizTypes,
+  setActiveQuiz,
 } from "~/server/lib/ArtistQuiz/data";
 
 export const getArtistData = createTRPCRouter({
@@ -139,84 +139,44 @@ export const getArtistData = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         if (ctx.auth.userId) {
-          console.log(ctx.auth.userId)
-          const user_exists = await checkUserExists(ctx.auth.userId);
-          console.log(user_exists)
-          if (!user_exists) {
-            await createUser(ctx.auth.userId);
-          }
-          const check_lastq_flag = await checkLastQuizFlag(ctx.auth.userId);
-          if (check_lastq_flag) {
-            await setLastQuizFlag(ctx.auth.userId, false);
-            return null;
-          }
-          const quiz_count = await countQuizzes(ctx.auth.userId);
-          if (quiz_count > 1) {
-            const user_quiz = await getUserquiz(ctx.auth.userId);
-            await deleteQuiz(user_quiz.id);
-
-            return user_quiz;
-          }
-          if (quiz_count === 1) {
-            const user_quiz = await getUserquiz(ctx.auth.userId);
-            await deleteQuiz(user_quiz.id);
-            await setLastQuizFlag(ctx.auth.userId, true);
-            return user_quiz;
-          }
-
-          const quizzes_pushed = 0;
-          const artistID = Number(input.artistID);
+          const QuizTypes = ["artistYear"];
+          const userID = ctx.auth.userId;
+          const artistID = +input.artistID;
           const artistName = input.artistName;
 
-          const beginDateYear = await whichYearArtistStarted(
-            artistID,
-            artistName,
-          );
-
-          const beginDateYearpushed = await pushArtistQuiz(
-            ctx.auth.userId,
-            beginDateYear,
-          );
-          if (beginDateYearpushed) {
-            quizzes_pushed + 1;
+          const user_exists = await checkUserExists(userID);
+          if (!user_exists) {
+            await createUser(userID);
           }
 
-          const whichAlbumBelongsToArtist = await whichAlbumBelongsArtist(
-            artistID,
-            artistName,
-          );
+          const quiz_active = await checkActiveQuiz(userID);
 
-          const whichAlbumBelongsArtistpushed = await pushArtistQuiz(
-            ctx.auth.userId,
-            whichAlbumBelongsToArtist,
-          );
-
-          if (whichAlbumBelongsArtistpushed) {
-            quizzes_pushed + 1;
+          const quiz_array = await getQuizTypes(userID);
+          if (!quiz_active && quiz_array.length === 0) {
+            await pushQuizTypes(userID, QuizTypes);
+            const new_quiz_array = await getQuizTypes(userID);
+            const quiz_type = new_quiz_array.shift();
+            await pushQuizTypes(userID, new_quiz_array);
+            if (quiz_type === "artistYear") {
+              const quiz = await artistYear(artistID, artistName);
+              await pushArtistQuiz(userID, quiz);
+              await setActiveQuiz(userID, true);
+              return await getUserquiz(userID);
+            }
           }
-
-          const whichSongBelongstoAlbum = await whichAlbumSongBelongs(artistID);
-          const whichSongBelongstoAlbumpushed = await pushArtistQuiz(
-            ctx.auth.userId,
-            whichSongBelongstoAlbum,
-          );
-          if (whichSongBelongstoAlbumpushed) {
-            quizzes_pushed + 1;
+          if (quiz_active && quiz_array.length > 0) {
+            const quiz_type = quiz_array.shift() as string;
+            await pushQuizTypes(userID, quiz_array);
+            if (quiz_type === "artistYear") {
+              const quiz = await artistYear(artistID, artistName);
+              await pushArtistQuiz(userID, quiz);
+              return await getUserquiz(userID);
+            }
           }
-
-          const inWhichYearWasAlbumReleased = await whichYearAlbum(artistID);
-          const inWhichYearWasAlbumReleasedpushed = await pushArtistQuiz(
-            ctx.auth.userId,
-            inWhichYearWasAlbumReleased,
-          );
-          if (inWhichYearWasAlbumReleasedpushed) {
-            quizzes_pushed + 1;
+          if (quiz_array.length === 0 && quiz_active) {
+            await setActiveQuiz(userID, false);
+            return null;
           }
-          const user_quiz = await getUserquiz(ctx.auth.userId);
-          await deleteQuiz(user_quiz.id);
-
-            return user_quiz;
-          
         }
       } catch (error) {
         console.error(error);

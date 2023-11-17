@@ -284,16 +284,7 @@ export async function pushArtistQuiz(
   }, "Could not create an artist quiz");
 }
 
-export async function countQuizzes(userID: string): Promise<number> {
-  return handleDatabaseQuery(async () => {
-    const count = await mqdb.artistQuiz.count({
-      where: {
-        userId: userID,
-      },
-    });
-    return count;
-  }, "Could not count user quizzez");
-}
+
 
 export async function deleteQuiz(questionID: string): Promise<void> {
   return handleDatabaseQuery(async () => {
@@ -305,7 +296,7 @@ export async function deleteQuiz(questionID: string): Promise<void> {
   }, "Could not delete Quiz");
 }
 
-export async function setLastQuizFlag(
+export async function setActiveQuiz(
   userID: string,
   option: boolean,
 ): Promise<void> {
@@ -315,7 +306,7 @@ export async function setLastQuizFlag(
         user_id: userID,
       },
       update: {
-        one_artist_question_remaining: option,
+        artist_quiz_active: option,
       },
       where: {
         user_id: userID,
@@ -324,17 +315,17 @@ export async function setLastQuizFlag(
   }, "Could not update last question flag");
 }
 
-export async function checkLastQuizFlag(userID: string): Promise<boolean> {
+export async function checkActiveQuiz(userID: string): Promise<boolean> {
   return handleDatabaseQuery(async () => {
     const state = await mqdb.userQuiz.findFirst({
       where: {
         user_id: userID,
       },
       select: {
-        one_artist_question_remaining: true,
+        artist_quiz_active: true,
       },
     });
-    return state!.one_artist_question_remaining;
+    return state!.artist_quiz_active;
   }, "Could not get last question flag state");
 }
 
@@ -360,4 +351,32 @@ export async function createUser(userID: string): Promise<void> {
       },
     });
   }, "Could not create user");
+}
+
+export async function pushQuizTypes(userID: string, quizTypes: string[]): Promise<void> {
+  return handleDatabaseQuery(async () => {
+    await mqdb.userQuiz.update({
+      data: {
+        active_artist_quiz_type: quizTypes
+      },
+      where: {
+        user_id: userID
+      }
+    })
+  }, "Could not update user artist quiz types")
+}
+
+export async function getQuizTypes(userID: string): Promise<string[]> {
+  return handleDatabaseQuery(async () => {
+    const quiz_type = await mqdb.userQuiz.findFirst({
+      where: {
+        user_id: userID
+      },
+      select: {
+        active_artist_quiz_type: true
+      }
+    })
+    return quiz_type?.active_artist_quiz_type as string[]
+    
+  }, "Could not fetch artist quiz type")
 }

@@ -10,7 +10,8 @@ datasource db {
 
 model UserQuiz {
   user_id                       String       @id
-  one_artist_question_remaining Boolean      @default(false)
+  artist_quiz_active Boolean      @default(false)
+  active_artist_quiz_type       String[]
   artistQuizzes                 ArtistQuiz[] @relation("UserArtistQuiz")
 }
 
