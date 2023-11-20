@@ -1,12 +1,7 @@
-export type ArtistPushQuiz = {
-  question: string;
-  answers: string[],
-  correct_answer: string,
-}
-  
-export type ArtistQuizUserFacing = {
+
+export type ArtistQuizType = {
   question: string;
   answers: string[];
-  id: string
+  correct_answer: string
 }
 

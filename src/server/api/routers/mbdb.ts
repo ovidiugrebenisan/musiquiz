@@ -7,21 +7,21 @@ import {
   getArtistLogo,
 } from "~/server/lib/SearchResults/functions";
 import {
-  // artistAlbum,
-  // albumSong,
-  // albumYear,
+  artistAlbum,
+  albumSong,
+  albumYear,
   artistYear,
 } from "~/server/lib/ArtistQuiz/functions";
 import {
-  checkActiveQuiz,
   checkUserExists,
   createUser,
   getQuizTypes,
-  getUserquiz,
-  pushArtistQuiz,
+  pushArtistQuizAnswer,
   pushQuizTypes,
-  setActiveQuiz,
+
 } from "~/server/lib/ArtistQuiz/data";
+import { randomNumber } from "~/utils/helper_functions";
+import { v4 as uuidv4 } from "uuid";
 
 export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
@@ -139,43 +139,49 @@ export const getArtistData = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         if (ctx.auth.userId) {
-          const QuizTypes = ["artistYear"];
+          const QuizTypes = [albumSong, artistAlbum, artistYear, albumYear];
           const userID = ctx.auth.userId;
           const artistID = +input.artistID;
-          const artistName = input.artistName;
 
           const user_exists = await checkUserExists(userID);
           if (!user_exists) {
             await createUser(userID);
           }
 
-          const quiz_active = await checkActiveQuiz(userID);
+          const quiz_active = await getQuizTypes(userID);
+          if (quiz_active.length === 0) {
+            const random_quiz_index = randomNumber(QuizTypes.length);
+            const random_quiz = QuizTypes[random_quiz_index]!;
+            const quiz = await random_quiz(artistID)
+            const uuid = uuidv4();
+            await pushArtistQuizAnswer(userID, quiz.correct_answer, uuid)
+            quiz_active.push(random_quiz.name)
+            await pushQuizTypes(userID, quiz_active)
+            return {
+              id: uuid,
+              question: quiz.question,
+              answers: quiz.answers
+            }
+          }
+          if (quiz_active.length === QuizTypes.length) {
+            await pushQuizTypes(userID, [])
+            return null
+          }
+          if (quiz_active.length > 0) {
+            const filteredQuizzes = QuizTypes.filter(func => !quiz_active.includes(func.name))
+            const random_quiz_index = randomNumber(filteredQuizzes.length)
+            const random_quiz = filteredQuizzes[random_quiz_index]!
+            const quiz = await random_quiz(artistID)
+            const uuid = uuidv4();
+            await pushArtistQuizAnswer(userID, quiz.correct_answer, uuid)
+            quiz_active.push(random_quiz.name)
+            await pushQuizTypes(userID, quiz_active)
+            return {
+              id: uuid,
+              question: quiz.question,
+              answers: quiz.answers
+            }
 
-          const quiz_array = await getQuizTypes(userID);
-          if (!quiz_active && quiz_array.length === 0) {
-            await pushQuizTypes(userID, QuizTypes);
-            const new_quiz_array = await getQuizTypes(userID);
-            const quiz_type = new_quiz_array.shift();
-            await pushQuizTypes(userID, new_quiz_array);
-            if (quiz_type === "artistYear") {
-              const quiz = await artistYear(artistID, artistName);
-              await pushArtistQuiz(userID, quiz);
-              await setActiveQuiz(userID, true);
-              return await getUserquiz(userID);
-            }
-          }
-          if (quiz_active && quiz_array.length > 0) {
-            const quiz_type = quiz_array.shift() as string;
-            await pushQuizTypes(userID, quiz_array);
-            if (quiz_type === "artistYear") {
-              const quiz = await artistYear(artistID, artistName);
-              await pushArtistQuiz(userID, quiz);
-              return await getUserquiz(userID);
-            }
-          }
-          if (quiz_array.length === 0 && quiz_active) {
-            await setActiveQuiz(userID, false);
-            return null;
           }
         }
       } catch (error) {

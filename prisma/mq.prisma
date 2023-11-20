@@ -10,15 +10,13 @@ datasource db {
 
 model UserQuiz {
   user_id                       String       @id
-  artist_quiz_active Boolean      @default(false)
   active_artist_quiz_type       String[]
+  chosen_random_artist_quizzes String[]
   artistQuizzes                 ArtistQuiz[] @relation("UserArtistQuiz")
 }
 
 model ArtistQuiz {
   id             String    @id
-  question       String
-  answers        String[]
   correct_answer String
   userQuiz       UserQuiz? @relation("UserArtistQuiz", fields: [userId], references: [user_id])
   userId         String?

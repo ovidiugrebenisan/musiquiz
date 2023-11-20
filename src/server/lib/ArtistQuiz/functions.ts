@@ -22,18 +22,19 @@ import {
   getTrackNamesbyIDS,
   getReleaseId,
   getMediumId,
+  getArtistName,
 } from "./data";
 
-import type { ArtistPushQuiz } from "./definitions";
+import type {  ArtistQuizType } from "./definitions";
 
 export async function artistYear(
   artistID: number,
-  artistName: string,
-): Promise<ArtistPushQuiz> {
+): Promise<ArtistQuizType> {
   const artistStartYear = await getArtistStartYear(artistID);
   const answers = generateAnswerswhichYear(artistStartYear);
   const shuffledArray = shuffleArray(answers);
   const answersStrings = shuffledArray.map(answer => answer.toString())
+  const artistName = await getArtistName(artistID)
   const question = `In which year was ${artistName} born/founded?`;
   const correct_answer = artistStartYear.toString()
   return {
@@ -45,8 +46,7 @@ export async function artistYear(
 
 export async function artistAlbum(
   artistID: number,
-  artistName: string,
-): Promise<ArtistPushQuiz> {
+): Promise<ArtistQuizType> {
   const studioAlbums = await getArtistStudioAlbums(artistID);
   const validStudioAlbums = await getStudioAlbumsNoSec(studioAlbums);
   const chosenAlbum = validStudioAlbums[randomNumber(validStudioAlbums.length)] as number;
@@ -60,6 +60,7 @@ export async function artistAlbum(
   shuffleArray(otherAlbums);
   const finalAlbums = await getAlbumsNames(otherAlbums);
   const chosenAlbumName = await getAlbumName(chosenAlbum);
+  const artistName = await getArtistName(artistID)
   const question = `Which of these albums belongs to ${artistName}?`;
   return {
     question,
@@ -70,7 +71,7 @@ export async function artistAlbum(
 
 export async function albumSong(
   artistID: number,
-): Promise<ArtistPushQuiz> {
+): Promise<ArtistQuizType> {
   const studioAlbums = await getArtistStudioAlbums(artistID);
   const filteredAlbums = await getStudioAlbumsNoSec(studioAlbums);
   const chosenAlbum = filteredAlbums[randomNumber(filteredAlbums.length)] as number;
@@ -92,7 +93,7 @@ export async function albumSong(
 
 export async function albumYear(
   artistID: number,
-): Promise<ArtistPushQuiz> {
+): Promise<ArtistQuizType> {
   const artistAlbums = await getArtistStudioAlbums(artistID);
   const artistStudioAlbums = await getStudioAlbumsNoSec(artistAlbums);
   const chosenAlbum = artistStudioAlbums[randomNumber(artistStudioAlbums.length)] as number;
