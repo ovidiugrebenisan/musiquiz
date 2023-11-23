@@ -1,5 +1,6 @@
 import { mbdb } from "~/server/db/mbdb";
 import { mqdb } from "~/server/db/mqdb";
+import { ArtistQuizFrontend, ArtistQuizType } from "./definitions";
 
 async function handleDatabaseQuery<T>(
   queryFunction: () => Promise<T>,
@@ -243,17 +244,17 @@ export async function getTrackNamesbyIDS(tracks: number[]): Promise<string[]> {
 
 
 
-export async function pushArtistQuizAnswer(
+export async function pushArtistQuiz(
   userID: string,
-  answer: string,
-  qid: string
+  quiz: ArtistQuizType,
 ): Promise<void> {
   return handleDatabaseQuery(async () => {
     await mqdb.artistQuiz.create({
       data: {
-        correct_answer: answer,
+        correct_answer: quiz.correct_answer,
         userId: userID,
-        id: qid,
+        question: quiz.question,
+        answers: quiz.answers
       },
     });
     
@@ -285,33 +286,7 @@ export async function createUser(userID: string): Promise<void> {
   }, "Could not create user");
 }
 
-export async function pushQuizTypes(userID: string, quizTypes: string[]): Promise<void> {
-  return handleDatabaseQuery(async () => {
-    await mqdb.userQuiz.update({
-      data: {
-        active_artist_quiz_type: quizTypes
-      },
-      where: {
-        user_id: userID
-      }
-    })
-  }, "Could not update user artist quiz types")
-}
 
-export async function getQuizTypes(userID: string): Promise<string[]> {
-  return handleDatabaseQuery(async () => {
-    const quiz_type = await mqdb.userQuiz.findFirst({
-      where: {
-        user_id: userID
-      },
-      select: {
-        active_artist_quiz_type: true
-      }
-    })
-    return quiz_type?.active_artist_quiz_type as string[]
-    
-  }, "Could not fetch artist quiz type")
-}
 
 
 export async function getArtistName(artistID: number): Promise<string> {
@@ -326,4 +301,86 @@ export async function getArtistName(artistID: number): Promise<string> {
     })
     return quiz_type?.name as string
   }, "Could not fetch artist's name")
+}
+
+export async function setArtistQuizAsSendable(userID: string): Promise<void> {
+  return handleDatabaseQuery(async () => {
+    const quiz_id = await mqdb.artistQuiz.findFirst({
+      where: {
+        userId: userID
+      },
+      orderBy: {
+        id: 'asc'
+      },
+      select: {
+        id: true
+      }
+    })
+    await mqdb.artistQuiz.update({
+      where: {
+        id: quiz_id?.id
+      },
+      data: {
+        sendable: true
+      }
+    })
+  }, "Could not mark question as sendable")
+}
+
+export async function getArtistQuizzescount(userID:string): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const count = await mqdb.artistQuiz.count({
+      where: {
+        userId: userID
+      }
+    })
+    return count
+  }, "Could not fetch user queries")
+}
+
+export function getArtistQuiz(userID: string): Promise<ArtistQuizFrontend | null> {
+  return handleDatabaseQuery(async () => {
+    const quiz = await mqdb.artistQuiz.findFirst({
+      where: {
+        userId: userID
+      },
+      orderBy: {
+        id: 'asc'
+      },
+      select: {
+        question: true,
+        answers: true
+      }
+    })
+    return quiz ? quiz : null
+  }, "Could not fetch artist quiz")
+}
+
+export function checkArtistQuizAnswer(userID: string, choice: string): Promise<boolean> {
+  return handleDatabaseQuery(async () => {
+    const answer = await mqdb.artistQuiz.findFirst({
+      where: {
+        userId: userID,
+        sendable: true
+      },
+      select: {
+        correct_answer: true
+      }
+    })
+    if (answer?.correct_answer === choice) {
+      return true
+    }
+    return false
+  },"Could not fetch correct answer")
+}
+
+export function deleteArtistQuiz(userID: string): Promise<void> {
+  return handleDatabaseQuery(async () => {
+    await mqdb.artistQuiz.deleteMany({
+      where: {
+        userId: userID,
+        sendable: true
+      }
+    })
+  }, "Could not delete artist quiz")
 }

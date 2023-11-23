@@ -5,3 +5,7 @@ export type ArtistQuizType = {
   correct_answer: string
 }
 
+export type ArtistQuizFrontend = {
+  question: string;
+  answers: string[]
+}

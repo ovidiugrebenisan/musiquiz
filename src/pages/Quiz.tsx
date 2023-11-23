@@ -1,32 +1,66 @@
 import { api } from "~/utils/api";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import { TextAnswerButton } from "~/components/TextAnswerButton";
+import { useEffect, useState } from "react";
+import type { ArtistQuizFrontend } from "~/server/lib/ArtistQuiz/definitions";
+
+type ButtonStatus =   { 
+  label?: string,
+  is_correct?: boolean
+}
 
 export default function Quiz() {
   const router = useRouter();
-  const { artistID, artistName, artistImage } = router.query;
+  const { artistID, artistImage } = router.query;
+  const [quiz, setQuiz] = useState<ArtistQuizFrontend | null>(null);
+  const [nextQuiz, setNextquiz] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [correct, setCorrect] = useState<boolean | null>(null);
+  const [buttonStatus, setButtonStatus] = useState<ButtonStatus>({})
 
-  if (
-    !artistID ||
-    !artistName ||
-    Array.isArray(artistID) ||
-    Array.isArray(artistName)
-  ) {
-    return <div>Loading...</div>;
-  }
-  const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID, {
-    refetchOnWindowFocus: false,
-  });
-  const quiz = api.mbdb.constructArtistQuiz.useQuery(
-    { artistID, artistName },
+  const generateQuiz = api.mbdb.constructArtistQuiz.useQuery(
+    artistID as string,
     {
       refetchOnWindowFocus: false,
+      enabled: router.isReady,
     },
   );
 
-  if (artistLogo.isFetching || artistLogo.isLoading) {
+  const isCorrect = api.mbdb.getArtistQuizAnswer.useQuery(selectedAnswer, {
+    enabled: !!selectedAnswer,
+    refetchOnWindowFocus: false,
+  });
+
+  const quizData = api.mbdb.getArtistQuiz.useQuery(nextQuiz, {
+    enabled: generateQuiz.isSuccess,
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (quizData.data) {
+      setQuiz(quizData.data);
+    }
+  }, [quizData]);
+
+  useEffect(() => {
+    if (isCorrect.isSuccess) {
+      setCorrect(isCorrect.data);
+    }
+  }, [isCorrect]);
+
+  const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID as string, {
+    refetchOnWindowFocus: false,
+    enabled: router.isReady,
+  });
+
+  function handleClick(answer: string, label:string) {
+    setSelectedAnswer(answer);
+    setButtonStatus({is_correct: correct as boolean, label: label})
+    setNextquiz(nextQuiz + 1);
+  }
+
+  if (artistLogo.isLoading) {
     return <div> Loading...</div>;
   }
 
@@ -35,23 +69,14 @@ export default function Quiz() {
     logoSrc = artistLogo.data;
   }
 
-  if (quiz.isFetching || quiz.isLoading) {
+  if (generateQuiz.isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (quiz.error) {
-    return <div>Something went wrong</div>
+  if (generateQuiz.error) {
+    return <div>Something went wrong</div>;
   }
 
-  if (!quiz.data) {
-    return <Link href="/Search">Back to Search</Link>;
-  }
-
-  const quizData = quiz.data;
-
-
-  const artistPicked = quizData.question;
-  const answers = quizData.answers;
   let imageSrc = "/default.png";
   if (artistImage && !Array.isArray(artistImage)) {
     imageSrc = artistImage;
@@ -75,13 +100,33 @@ export default function Quiz() {
       </div>
 
       <p className="absolute left-[10.5vw] top-[36vh] h-[7vh] w-[44.72vw] font-metropolis text-[40.62px] font-extrabold leading-[39.9px]  tracking-[-1.015px] text-zinc-800">
-        {artistPicked}
+        {quiz?.question}
       </p>
       <div className=" absolute left-[11.25vw] top-[48.9vh] flex h-[23vh] w-[38.4vw] flex-col gap-[0.5vh]">
-        <TextAnswerButton ButtonLabel="A" Answer={answers[0]} />
-        <TextAnswerButton ButtonLabel="B" Answer={answers[1]} />
-        <TextAnswerButton ButtonLabel="C" Answer={answers[2]} />
-        <TextAnswerButton ButtonLabel="D" Answer={answers[3]} />
+        <TextAnswerButton
+          ButtonLabel="A"
+          Answer={quiz?.answers[0] as string}
+          handleClick={handleClick}
+          status={buttonStatus}
+        />
+        <TextAnswerButton
+          ButtonLabel="B"
+          Answer={quiz?.answers[1] as string}
+          handleClick={handleClick}
+          status={buttonStatus}
+        />
+        <TextAnswerButton
+          ButtonLabel="C"
+          Answer={quiz?.answers[2] as string}
+          handleClick={handleClick}
+          status={buttonStatus}
+        />
+        <TextAnswerButton
+          ButtonLabel="D"
+          Answer={quiz?.answers[3] as string}
+          handleClick={handleClick}
+          status={buttonStatus}
+        />
       </div>
     </>
   );

@@ -55,10 +55,10 @@ export async function artistAlbum(
   const otherAlbumsGenre = await getAlbumsOfGenre(artistGenre);
   const otherAlbumsYear = await getAlbumsbyYear(albumReleaseYear);
   const otherAlbums = arrayIntersection(otherAlbumsGenre, otherAlbumsYear);
-  otherAlbums.splice(3);
-  otherAlbums.push(chosenAlbum);
-  shuffleArray(otherAlbums);
-  const finalAlbums = await getAlbumsNames(otherAlbums);
+  const finalOtherAlbums = otherAlbums.slice(0, 3);
+  finalOtherAlbums.push(chosenAlbum);
+  shuffleArray(finalOtherAlbums);
+  const finalAlbums = await getAlbumsNames(finalOtherAlbums);
   const chosenAlbumName = await getAlbumName(chosenAlbum);
   const artistName = await getArtistName(artistID)
   const question = `Which of these albums belongs to ${artistName}?`;
@@ -75,15 +75,19 @@ export async function albumSong(
   const studioAlbums = await getArtistStudioAlbums(artistID);
   const filteredAlbums = await getStudioAlbumsNoSec(studioAlbums);
   const chosenAlbum = filteredAlbums[randomNumber(filteredAlbums.length)] as number;
-  const releaseIDs = await getReleaseIDS(filteredAlbums);
-  const albumName = await getAlbumName(chosenAlbum);
   const chosenReleaseID = await getReleaseId(chosenAlbum);
   const chosenMedium = await getMediumId(chosenReleaseID);
+  const chosenTracks = await getTrackIDsByMedium(chosenMedium);
+  const chosenTrack = await getTrackNamebyID(chosenTracks[randomNumber(chosenTracks.length)] as number);
+  const albumName = await getAlbumName(chosenAlbum);
+  const otherAlbums = filteredAlbums.filter(album => album !== chosenAlbum)
+  const releaseIDs = await getReleaseIDS(otherAlbums);
   const mediums = await getMediumsbyReleaseIDs(releaseIDs);
   const otherTracks = await getTracksbyMediumIDS(mediums);
-  const chosenTracks = await getTrackIDsByMedium(chosenMedium);
-  const trackNames = await getTrackNamesbyIDS(otherTracks);
-  const chosenTrack = await getTrackNamebyID(chosenTracks[randomNumber(chosenTracks.length)] as number);
+  shuffleArray(otherTracks)
+  const finalOtherTracks = otherTracks.slice(0,3)
+
+  const trackNames = await getTrackNamesbyIDS(finalOtherTracks);
   return {
     question: `Which of these songs belongs to the album called ${albumName}`,
     answers: shuffleArray([...trackNames, chosenTrack]),

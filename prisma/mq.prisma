@@ -9,14 +9,17 @@ datasource db {
 }
 
 model UserQuiz {
-  user_id                       String       @id
-  active_artist_quiz_type       String[]
+  user_id                      String       @id
+  active_artist_quiz_type      String[]
   chosen_random_artist_quizzes String[]
-  artistQuizzes                 ArtistQuiz[] @relation("UserArtistQuiz")
+  artistQuizzes                ArtistQuiz[] @relation("UserArtistQuiz")
 }
 
 model ArtistQuiz {
-  id             String    @id
+  question       String
+  answers        String[]
+  id             Int       @id @default(autoincrement())
+  sendable       Boolean   @default(false)
   correct_answer String
   userQuiz       UserQuiz? @relation("UserArtistQuiz", fields: [userId], references: [user_id])
   userId         String?
