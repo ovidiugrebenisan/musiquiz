@@ -5,19 +5,14 @@ import { TextAnswerButton } from "~/components/TextAnswerButton";
 import { useEffect, useState } from "react";
 import type { ArtistQuizFrontend } from "~/server/lib/ArtistQuiz/definitions";
 
-type ButtonStatus =   { 
-  label?: string,
-  is_correct?: boolean
-}
+
 
 export default function Quiz() {
   const router = useRouter();
   const { artistID, artistImage } = router.query;
   const [quiz, setQuiz] = useState<ArtistQuizFrontend | null>(null);
   const [nextQuiz, setNextquiz] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState("");
-  const [correct, setCorrect] = useState<boolean | null>(null);
-  const [buttonStatus, setButtonStatus] = useState<ButtonStatus>({})
+  const [buttonDisabled, setButtonDisabled] = useState(false)
 
   const generateQuiz = api.mbdb.constructArtistQuiz.useQuery(
     artistID as string,
@@ -26,11 +21,6 @@ export default function Quiz() {
       enabled: router.isReady,
     },
   );
-
-  const isCorrect = api.mbdb.getArtistQuizAnswer.useQuery(selectedAnswer, {
-    enabled: !!selectedAnswer,
-    refetchOnWindowFocus: false,
-  });
 
   const quizData = api.mbdb.getArtistQuiz.useQuery(nextQuiz, {
     enabled: generateQuiz.isSuccess,
@@ -44,21 +34,16 @@ export default function Quiz() {
   }, [quizData]);
 
   useEffect(() => {
-    if (isCorrect.isSuccess) {
-      setCorrect(isCorrect.data);
-    }
-  }, [isCorrect]);
+    setNextquiz(prevQuiz => prevQuiz + 1)
+  },[buttonDisabled])
+
+
 
   const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID as string, {
     refetchOnWindowFocus: false,
     enabled: router.isReady,
   });
 
-  function handleClick(answer: string, label:string) {
-    setSelectedAnswer(answer);
-    setButtonStatus({is_correct: correct as boolean, label: label})
-    setNextquiz(nextQuiz + 1);
-  }
 
   if (artistLogo.isLoading) {
     return <div> Loading...</div>;
@@ -106,26 +91,27 @@ export default function Quiz() {
         <TextAnswerButton
           ButtonLabel="A"
           Answer={quiz?.answers[0] as string}
-          handleClick={handleClick}
-          status={buttonStatus}
+          disabled={buttonDisabled}
+          set_disabled={setButtonDisabled}
         />
         <TextAnswerButton
           ButtonLabel="B"
           Answer={quiz?.answers[1] as string}
-          handleClick={handleClick}
-          status={buttonStatus}
+          disabled={buttonDisabled}
+          set_disabled={setButtonDisabled}
+          
         />
         <TextAnswerButton
           ButtonLabel="C"
           Answer={quiz?.answers[2] as string}
-          handleClick={handleClick}
-          status={buttonStatus}
+          disabled={buttonDisabled}
+          set_disabled={setButtonDisabled}
         />
         <TextAnswerButton
           ButtonLabel="D"
           Answer={quiz?.answers[3] as string}
-          handleClick={handleClick}
-          status={buttonStatus}
+          disabled={buttonDisabled}
+          set_disabled={setButtonDisabled}
         />
       </div>
     </>
