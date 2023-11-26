@@ -5,14 +5,12 @@ import { TextAnswerButton } from "~/components/TextAnswerButton";
 import { useEffect, useState } from "react";
 import type { ArtistQuizFrontend } from "~/server/lib/ArtistQuiz/definitions";
 
-
-
 export default function Quiz() {
   const router = useRouter();
   const { artistID, artistImage } = router.query;
   const [quiz, setQuiz] = useState<ArtistQuizFrontend | null>(null);
   const [nextQuiz, setNextquiz] = useState(0);
-  const [buttonDisabled, setButtonDisabled] = useState(false)
+  const [buttonDisabled, setButtonDisabled] = useState(false);
 
   const generateQuiz = api.mbdb.constructArtistQuiz.useQuery(
     artistID as string,
@@ -29,14 +27,10 @@ export default function Quiz() {
 
   useEffect(() => {
     if (quizData.data) {
+      setButtonDisabled(false)
       setQuiz(quizData.data);
     }
-  }, [quizData]);
-
-  useEffect(() => {
-    setNextquiz(prevQuiz => prevQuiz + 1)
-  },[buttonDisabled])
-
+  }, [quizData.data]);
 
 
   const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID as string, {
@@ -44,18 +38,13 @@ export default function Quiz() {
     enabled: router.isReady,
   });
 
-
-  if (artistLogo.isLoading) {
+  if (artistLogo.isLoading || generateQuiz.isLoading) {
     return <div> Loading...</div>;
   }
 
   let logoSrc = "/default.png";
   if (artistLogo.data) {
     logoSrc = artistLogo.data;
-  }
-
-  if (generateQuiz.isLoading) {
-    return <div>Loading...</div>;
   }
 
   if (generateQuiz.error) {
@@ -93,25 +82,28 @@ export default function Quiz() {
           Answer={quiz?.answers[0] as string}
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
+          next_quiz={setNextquiz}
         />
         <TextAnswerButton
           ButtonLabel="B"
           Answer={quiz?.answers[1] as string}
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
-          
+          next_quiz={setNextquiz}
         />
         <TextAnswerButton
           ButtonLabel="C"
           Answer={quiz?.answers[2] as string}
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
+          next_quiz={setNextquiz}
         />
         <TextAnswerButton
           ButtonLabel="D"
           Answer={quiz?.answers[3] as string}
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
+          next_quiz={setNextquiz}
         />
       </div>
     </>
