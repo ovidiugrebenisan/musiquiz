@@ -11,6 +11,7 @@ export default function Quiz() {
   const [quiz, setQuiz] = useState<ArtistQuizFrontend | null>(null);
   const [nextQuiz, setNextquiz] = useState(0);
   const [buttonDisabled, setButtonDisabled] = useState(false);
+  const [resetButtonColor, setResetButtonColor] = useState(0)
 
   const generateQuiz = api.mbdb.constructArtistQuiz.useQuery(
     artistID as string,
@@ -26,10 +27,11 @@ export default function Quiz() {
   });
 
   useEffect(() => {
-    if (quizData.data) {
+    if (quizData.data && quizData.isSuccess) {
       setButtonDisabled(false)
+      setResetButtonColor(prev => prev + 1)
       setQuiz(quizData.data);
-    } else if (quizData.data === null) {
+    } else if (quizData.data === null && nextQuiz !== 0) {
       void router.push("/Search")
     }
   }, [quizData.data]);
@@ -85,6 +87,7 @@ export default function Quiz() {
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
           next_quiz={setNextquiz}
+          reset_button={resetButtonColor}
         />
         <TextAnswerButton
           ButtonLabel="B"
@@ -92,6 +95,7 @@ export default function Quiz() {
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
           next_quiz={setNextquiz}
+          reset_button={resetButtonColor}
         />
         <TextAnswerButton
           ButtonLabel="C"
@@ -99,6 +103,7 @@ export default function Quiz() {
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
           next_quiz={setNextquiz}
+          reset_button={resetButtonColor}
         />
         <TextAnswerButton
           ButtonLabel="D"
@@ -106,6 +111,7 @@ export default function Quiz() {
           disabled={buttonDisabled}
           set_disabled={setButtonDisabled}
           next_quiz={setNextquiz}
+          reset_button={resetButtonColor}
         />
       </div>
     </>

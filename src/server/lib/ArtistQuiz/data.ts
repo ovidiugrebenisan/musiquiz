@@ -1,6 +1,6 @@
 import { mbdb } from "~/server/db/mbdb";
 import { mqdb } from "~/server/db/mqdb";
-import { ArtistQuizFrontend, ArtistQuizType } from "./definitions";
+import type { ArtistQuizFrontend, ArtistQuizType } from "./definitions";
 
 async function handleDatabaseQuery<T>(
   queryFunction: () => Promise<T>,
@@ -389,4 +389,30 @@ export function deleteArtistQuiz(userID: string): Promise<void> {
       },
     });
   }, "Could not delete artist quiz");
+}
+
+
+export function countAlbumsByTag(tag: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    return   await mbdb.release_group_tag.count({
+      where: {
+        tag: tag
+      }
+    })
+  }, "Could not count albums by genre")
+}
+
+export function getAlbumByIndex(random_album: number, tag: number): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const randomAlbum = await mbdb.release_group_tag.findFirst({
+      where: {
+        tag: tag
+      },
+      skip: random_album,
+      select: {
+        release_group: true
+      }
+    })
+    return randomAlbum!.release_group
+  }, "Could not fetch albums by index")
 }

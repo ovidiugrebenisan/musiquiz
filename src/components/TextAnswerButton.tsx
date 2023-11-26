@@ -8,6 +8,7 @@ type Props = {
   disabled: boolean;
   set_disabled: React.Dispatch<React.SetStateAction<boolean>>;
   next_quiz: React.Dispatch<React.SetStateAction<number>>;
+  reset_button: number
 };
 
 export function TextAnswerButton({
@@ -16,6 +17,7 @@ export function TextAnswerButton({
   disabled,
   set_disabled,
   next_quiz,
+  reset_button,
 }: Props) {
   const [checkResponse, setCheckResponse] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -41,7 +43,7 @@ export function TextAnswerButton({
 
   useEffect(() => {
     setIsCorrect(null);
-  }, [Answer]);
+  }, [reset_button]);
 
   const backgroundColorClass = clsx({
     "bg-green-500": isCorrect === true,

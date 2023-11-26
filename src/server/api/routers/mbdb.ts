@@ -151,6 +151,9 @@ export const getArtistData = createTRPCRouter({
 
           for (const quizType of QuizTypes) {
             const quiz = await quizType(artistID);
+            if (quiz === null) {
+              continue
+            }
             await pushArtistQuiz(userID, quiz);
             
           }
