@@ -19,6 +19,7 @@ import {
   deleteArtistQuiz,
   getArtistQuiz,
   getArtistQuizzescount,
+  getNextArtistQuizID,
   pushArtistQuiz,
   setArtistQuizAsSendable,
 } from "~/server/lib/ArtistQuiz/data";
@@ -151,8 +152,10 @@ export const getArtistData = createTRPCRouter({
           for (const quizType of QuizTypes) {
             const quiz = await quizType(artistID);
             await pushArtistQuiz(userID, quiz);
-            await setArtistQuizAsSendable(userID);
+            
           }
+          const quizID = await getNextArtistQuizID(userID)
+          await setArtistQuizAsSendable(quizID!);
 
           return true;
         }
@@ -171,7 +174,11 @@ export const getArtistData = createTRPCRouter({
     .query(async ({ctx, input}) => {
       const answer = await checkArtistQuizAnswer(ctx.auth.userId!, input)
       await deleteArtistQuiz(ctx.auth.userId!)
-      await setArtistQuizAsSendable(ctx.auth.userId!)
+      const quizID = await getNextArtistQuizID(ctx.auth.userId!)
+      if (quizID) {
+        await setArtistQuizAsSendable(quizID)
+      }     
+
       return answer
     })
 

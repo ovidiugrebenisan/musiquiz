@@ -29,6 +29,8 @@ export default function Quiz() {
     if (quizData.data) {
       setButtonDisabled(false)
       setQuiz(quizData.data);
+    } else if (quizData.data === null) {
+      void router.push("/Search")
     }
   }, [quizData.data]);
 
