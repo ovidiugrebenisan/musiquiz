@@ -416,3 +416,18 @@ export function getAlbumByIndex(random_album: number, tag: number): Promise<numb
     return randomAlbum!.release_group
   }, "Could not fetch albums by index")
 }
+
+export function getArtistType(artistID: number): Promise<number | null> {
+  return handleDatabaseQuery(async () => {
+    const artist_type = await mbdb.artist.findFirst({
+      where: {
+        id: artistID
+      },
+      select: {
+        type: true
+      }
+    }) 
+
+    return artist_type && artist_type.type ? artist_type.type : null
+  }, "Could not get artist type")
+}

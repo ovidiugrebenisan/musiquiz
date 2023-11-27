@@ -22,6 +22,7 @@ import {
   getArtistName,
   countAlbumsByTag,
   getAlbumByIndex,
+  getArtistType,
 } from "./data";
 
 import type { ArtistQuizType } from "./definitions";
@@ -32,7 +33,10 @@ export async function artistYear(artistID: number): Promise<ArtistQuizType> {
   const shuffledArray = shuffleArray(answers);
   const answersStrings = shuffledArray.map((answer) => answer.toString());
   const artistName = await getArtistName(artistID);
-  const question = `In which year was ${artistName} born/founded?`;
+  const artistType = await getArtistType(artistID);
+  const adjective = artistType !== 1 ? "founded" : "born";
+
+  const question = `In which year was ${artistName} ${adjective}?`;
   const correct_answer = artistStartYear.toString();
   return {
     question,
@@ -50,7 +54,7 @@ export async function artistAlbum(
     randomNumber(validStudioAlbums.length)
   ] as number;
   const artistGenre = await getArtistGenre(artistID);
-  console.log(artistGenre)
+  console.log(artistGenre);
   const otherAlbumsCount = await countAlbumsByTag(artistGenre);
   if (otherAlbumsCount < 4) {
     return null;
@@ -58,9 +62,9 @@ export async function artistAlbum(
   const randomAlbums: number[] = [];
   while (randomAlbums.length < 3) {
     const randomIndex = randomNumber(otherAlbumsCount);
-    console.log(randomIndex)
+    console.log(randomIndex);
     const album = await getAlbumByIndex(randomIndex, artistGenre);
-    console.log(album)
+    console.log(album);
     if (album === chosenAlbum || randomAlbums.includes(album)) {
       continue;
     }
