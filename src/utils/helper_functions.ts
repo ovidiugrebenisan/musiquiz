@@ -16,10 +16,10 @@ export function shuffleArray<T>(array: T[]): T[] {
   return array;
 }
 
-export function generateAnswerswhichYear(correct_answer: number): number[] {
+
+export function generateAnswerswhichYear(correct_answer: number, min: number): number[] {
   const answers: number[] = [];
   let random = 0;
-    const min = correct_answer - 5
     const max = correct_answer + 5
   while (answers.length < 3) {
     const delta = Math.round(Math.random());
@@ -33,7 +33,6 @@ export function generateAnswerswhichYear(correct_answer: number): number[] {
     }
     answers.push(random);
   }
-  console.log(answers)
   answers.push(correct_answer)
   return answers;
 }

@@ -29,7 +29,7 @@ import type { ArtistQuizType } from "./definitions";
 
 export async function artistYear(artistID: number): Promise<ArtistQuizType> {
   const artistStartYear = await getArtistStartYear(artistID);
-  const answers = generateAnswerswhichYear(artistStartYear);
+  const answers = generateAnswerswhichYear(artistStartYear, artistStartYear - 5);
   const shuffledArray = shuffleArray(answers);
   const answersStrings = shuffledArray.map((answer) => answer.toString());
   const artistName = await getArtistName(artistID);
@@ -54,7 +54,6 @@ export async function artistAlbum(
     randomNumber(validStudioAlbums.length)
   ] as number;
   const artistGenre = await getArtistGenre(artistID);
-  console.log(artistGenre);
   const otherAlbumsCount = await countAlbumsByTag(artistGenre);
   if (otherAlbumsCount < 4) {
     return null;
@@ -62,9 +61,8 @@ export async function artistAlbum(
   const randomAlbums: number[] = [];
   while (randomAlbums.length < 3) {
     const randomIndex = randomNumber(otherAlbumsCount);
-    console.log(randomIndex);
+
     const album = await getAlbumByIndex(randomIndex, artistGenre);
-    console.log(album);
     if (album === chosenAlbum || randomAlbums.includes(album)) {
       continue;
     }
@@ -120,7 +118,7 @@ export async function albumYear(artistID: number): Promise<ArtistQuizType> {
   ] as number;
   const chosenAlbumName = await getAlbumName(chosenAlbum);
   const chosenAlbumYear = await getAlbumReleaseYear(chosenAlbum);
-  const answers = generateAnswerswhichYear(chosenAlbumYear);
+  const answers = generateAnswerswhichYear(chosenAlbumYear, chosenAlbumYear - 5);
   const shuffledAnswers = shuffleArray(answers);
   const stringAnswers = shuffledAnswers.map((answer) => answer.toString());
   const question = `In which year was the album ${chosenAlbumName} released?`;
@@ -128,6 +126,26 @@ export async function albumYear(artistID: number): Promise<ArtistQuizType> {
   return {
     question,
     answers: stringAnswers,
+    correct_answer,
+  };
+}
+
+export async function studioAlbumCount(
+  artistID: number,
+): Promise<ArtistQuizType> {
+  const artistAlbums = await getArtistStudioAlbums(artistID);
+  const artistName = await getArtistName(artistID);
+  const artistStudioAlbumsCount = (await getStudioAlbumsNoSec(artistAlbums))
+    .length;
+  const answers = shuffleArray(
+    generateAnswerswhichYear(artistStudioAlbumsCount, 1),
+  ).map((answer) => answer.toString());
+  const question = `How many studio albums does ${artistName} have?`;
+  const correct_answer = artistStudioAlbumsCount.toString();
+
+  return {
+    question,
+    answers,
     correct_answer,
   };
 }

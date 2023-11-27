@@ -56,7 +56,7 @@ export default function Quiz() {
   }
 
   let imageSrc = "/default.png";
-  if (artistImage && !Array.isArray(artistImage)) {
+  if (artistImage && !Array.isArray(artistImage) && artistImage !== "null") {
     imageSrc = artistImage;
   }
 
