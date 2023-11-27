@@ -23,13 +23,20 @@ import {
   countAlbumsByTag,
   getAlbumByIndex,
   getArtistType,
+  getTrackNamesandPositionForMedium,
 } from "./data";
 
 import type { ArtistQuizType } from "./definitions";
 
 export async function artistYear(artistID: number): Promise<ArtistQuizType> {
   const artistStartYear = await getArtistStartYear(artistID);
-  const answers = generateAnswerswhichYear(artistStartYear, artistStartYear - 5);
+  const currentYear = new Date().getFullYear()
+  const maxYear = Math.min(currentYear - artistStartYear, 5)
+  const answers = generateAnswerswhichYear(
+    artistStartYear,
+    artistStartYear - 5,
+    artistStartYear + maxYear
+  );
   const shuffledArray = shuffleArray(answers);
   const answersStrings = shuffledArray.map((answer) => answer.toString());
   const artistName = await getArtistName(artistID);
@@ -118,7 +125,13 @@ export async function albumYear(artistID: number): Promise<ArtistQuizType> {
   ] as number;
   const chosenAlbumName = await getAlbumName(chosenAlbum);
   const chosenAlbumYear = await getAlbumReleaseYear(chosenAlbum);
-  const answers = generateAnswerswhichYear(chosenAlbumYear, chosenAlbumYear - 5);
+  const currentYear = new Date().getFullYear();
+  const maxYear = Math.min(currentYear - chosenAlbumYear, 5)
+  const answers = generateAnswerswhichYear(
+    chosenAlbumYear,
+    chosenAlbumYear - 5,
+    chosenAlbumYear + maxYear
+  );
   const shuffledAnswers = shuffleArray(answers);
   const stringAnswers = shuffledAnswers.map((answer) => answer.toString());
   const question = `In which year was the album ${chosenAlbumName} released?`;
@@ -138,11 +151,55 @@ export async function studioAlbumCount(
   const artistStudioAlbumsCount = (await getStudioAlbumsNoSec(artistAlbums))
     .length;
   const answers = shuffleArray(
-    generateAnswerswhichYear(artistStudioAlbumsCount, 1),
+    generateAnswerswhichYear(artistStudioAlbumsCount, 1, artistStudioAlbumsCount + 5),
   ).map((answer) => answer.toString());
   const question = `How many studio albums does ${artistName} have?`;
   const correct_answer = artistStudioAlbumsCount.toString();
 
+  return {
+    question,
+    answers,
+    correct_answer,
+  };
+}
+
+export async function albumOpeningSong(
+  artistID: number,
+): Promise<ArtistQuizType | null> {
+  let tracks: { name: string; position: number }[] = [];
+  let albumName = "";
+  const artistAlbums = await getArtistStudioAlbums(artistID);
+  const artistStudioAlbums = await getStudioAlbumsNoSec(artistAlbums);
+  while (artistStudioAlbums.length > 0) {
+    const randomIndex = randomNumber(artistStudioAlbums.length);
+    const chosenAlbum = artistStudioAlbums[randomIndex] as number;
+    const chosenReleaseID = await getReleaseId(chosenAlbum);
+    const chosenMedium = await getMediumId(chosenReleaseID);
+    tracks = await getTrackNamesandPositionForMedium(chosenMedium);
+    if (tracks.length < 4) {
+      artistStudioAlbums.splice(randomIndex, 1);
+      continue;
+    }
+    if (artistStudioAlbums.length === 0) {
+      return null;
+    }
+    albumName = await getAlbumName(chosenAlbum);
+    break;
+  }
+  const correct_answer = tracks.find((obj) => obj.position === 1)!.name;
+
+  tracks = tracks.filter((obj) => obj.position !== 1);
+
+  let answers = [];
+  answers.push(correct_answer);
+  while (answers.length < 4) {
+    const randomIndex = randomNumber(tracks.length);
+    const track = tracks[randomIndex] 
+    answers.push(track!.name);
+    tracks.splice(randomIndex, 1);
+  }
+  answers = shuffleArray(answers);
+  const question = `What was the opening song of the studio album called ${albumName}?`;
   return {
     question,
     answers,

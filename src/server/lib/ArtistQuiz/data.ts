@@ -431,3 +431,18 @@ export function getArtistType(artistID: number): Promise<number | null> {
     return artist_type && artist_type.type ? artist_type.type : null
   }, "Could not get artist type")
 }
+
+export function getTrackNamesandPositionForMedium(mediumID: number): Promise<{name: string, position: number}[]> {
+  return handleDatabaseQuery(async () => {
+    const track = await mbdb.track.findMany({
+      where: {
+        medium: mediumID,
+      },
+      select: {
+        name: true,
+        position: true
+      }
+    })
+    return track
+  }, "Could not get track for medium")
+}

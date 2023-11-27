@@ -17,10 +17,9 @@ export function shuffleArray<T>(array: T[]): T[] {
 }
 
 
-export function generateAnswerswhichYear(correct_answer: number, min: number): number[] {
+export function generateAnswerswhichYear(correct_answer: number, min: number, max:number): number[] {
   const answers: number[] = [];
   let random = 0;
-    const max = correct_answer + 5
   while (answers.length < 3) {
     const delta = Math.round(Math.random());
     if (delta === 0) {
