@@ -13,6 +13,7 @@ import {
   artistYear,
   studioAlbumCount,
   albumOpeningSong,
+  whoWasInstrumentist,
 } from "~/server/lib/ArtistQuiz/functions";
 import {
   checkArtistQuizAnswer,
@@ -137,7 +138,7 @@ export const getArtistData = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         if (ctx.auth.userId) {
-          const QuizTypes = [albumSong, artistAlbum, artistYear, albumYear, studioAlbumCount, albumOpeningSong];
+          const QuizTypes = [whoWasInstrumentist];
           const userID = ctx.auth.userId;
           const artistID = +input;
 

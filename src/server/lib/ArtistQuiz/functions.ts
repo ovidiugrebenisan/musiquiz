@@ -24,6 +24,11 @@ import {
   getAlbumByIndex,
   getArtistType,
   getTrackNamesandPositionForMedium,
+  getartistArtistLinks,
+  getLinksData,
+  getLinkAttributes,
+  getAttributeName,
+  getArtistNames,
 } from "./data";
 
 import type { ArtistQuizType } from "./definitions";
@@ -205,4 +210,59 @@ export async function albumOpeningSong(
     answers,
     correct_answer,
   };
+}
+
+type LinkData = {
+  id: number;
+  begin_date_year: number | null
+  end_date_year: number | null
+  attribute_count: number;
+  ended: boolean
+}
+
+export async function whoWasInstrumentist(artistID: number ): Promise<ArtistQuizType | null> {
+  const artistType = await getArtistType(artistID)
+  if (artistType === 1) {
+    return null
+  }
+
+  const relationships = await getartistArtistLinks(artistID)
+
+  if (relationships.length < 4) {
+    return null
+  }
+  const linkIds = relationships.map(linkID => linkID.link)
+  const linksData = await getLinksData(linkIds)
+  const filteredData = linksData.filter(link => link.attribute_count > 0 && link.begin_date_year)
+  if (filteredData.length < 4) {
+    return null
+  }
+  const artistName = await getArtistName(artistID)
+  const chosenLink = filteredData[randomNumber(filteredData.length)] as LinkData
+  const chosenLinkAttrs = await getLinkAttributes(chosenLink.id)
+  const chosenAttrName = await getAttributeName(chosenLinkAttrs[randomNumber(chosenLinkAttrs.length)] as number)
+
+  const chosenArtistID = relationships.filter(rel => rel.link === chosenLink.id)[0]!.entity0
+  const correct_answer = await getArtistName(chosenArtistID)
+  const startYear = chosenLink.begin_date_year
+  const endYear = chosenLink.ended === false ? "current times" : chosenLink.end_date_year
+
+  const otherNamesIDsfiltered = filteredData.filter(name => name !== chosenLink).map(id => id.id)
+  console.log(otherNamesIDsfiltered)
+  shuffleArray(otherNamesIDsfiltered)
+  const others = otherNamesIDsfiltered.slice(0, 3)
+  console.log(others)
+  const otherArtistIds = relationships.filter(id => others.includes(id.link) ).map(id => id.entity0)
+  console.log(otherArtistIds)
+  const otherArtistNames = await getArtistNames(otherArtistIds)
+  console.log(otherArtistNames)
+
+  const answers = [...otherArtistNames, correct_answer]
+  const question = `Who played the role of ${chosenAttrName} for ${artistName} from ${startYear} to ${endYear} ?`
+
+  return {
+    question,
+    correct_answer,
+    answers
+  }
 }
