@@ -241,25 +241,31 @@ export async function whoWasInstrumentist(artistID: number ): Promise<ArtistQuiz
   const artistName = await getArtistName(artistID)
   const chosenLink = filteredData[randomNumber(filteredData.length)] as LinkData
   const chosenLinkAttrs = await getLinkAttributes(chosenLink.id)
-  const chosenAttrName = await getAttributeName(chosenLinkAttrs[randomNumber(chosenLinkAttrs.length)] as number)
+  const chosenAttr = chosenLinkAttrs[randomNumber(chosenLinkAttrs.length)] as number
 
+  const chosenAttrName = await getAttributeName(chosenAttr)
+  const removeDuplicates = filteredData.filter(async  (link) => {
+    !(await getLinkAttributes(link.id)).includes(chosenAttr)
+  })
+  if (removeDuplicates.length < 4) {
+    return null
+  }
   const chosenArtistID = relationships.filter(rel => rel.link === chosenLink.id)[0]!.entity0
   const correct_answer = await getArtistName(chosenArtistID)
   const startYear = chosenLink.begin_date_year
   const endYear = chosenLink.ended === false ? "current times" : chosenLink.end_date_year
 
-  const otherNamesIDsfiltered = filteredData.filter(name => name !== chosenLink).map(id => id.id)
-  console.log(otherNamesIDsfiltered)
+  const otherNamesIDsfiltered = removeDuplicates.filter(name => name !== chosenLink).map(id => id.id)
   shuffleArray(otherNamesIDsfiltered)
   const others = otherNamesIDsfiltered.slice(0, 3)
-  console.log(others)
-  const otherArtistIds = relationships.filter(id => others.includes(id.link) ).map(id => id.entity0)
-  console.log(otherArtistIds)
-  const otherArtistNames = await getArtistNames(otherArtistIds)
-  console.log(otherArtistNames)
 
+  const otherArtistIds = relationships.filter(id => others.includes(id.link) ).map(id => id.entity0)
+
+  const otherArtistNames = await getArtistNames(otherArtistIds)
+
+  let question = ""
   const answers = [...otherArtistNames, correct_answer]
-  const question = `Who played the role of ${chosenAttrName} for ${artistName} from ${startYear} to ${endYear} ?`
+  question = chosenAttrName === "original" ? `Who was a founding member of ${artistName}?` : `Who played the role of ${chosenAttrName} for ${artistName} from ${startYear} to ${endYear} ?`
 
   return {
     question,
