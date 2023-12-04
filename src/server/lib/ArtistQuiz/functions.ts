@@ -155,8 +155,9 @@ export async function studioAlbumCount(
   const artistName = await getArtistName(artistID);
   const artistStudioAlbumsCount = (await getStudioAlbumsNoSec(artistAlbums))
     .length;
+  const minCount = Math.max(artistStudioAlbumsCount -5, 1)
   const answers = shuffleArray(
-    generateAnswerswhichYear(artistStudioAlbumsCount, 1, artistStudioAlbumsCount + 5),
+    generateAnswerswhichYear(artistStudioAlbumsCount, minCount, artistStudioAlbumsCount + 5),
   ).map((answer) => answer.toString());
   const question = `How many studio albums does ${artistName} have?`;
   const correct_answer = artistStudioAlbumsCount.toString();

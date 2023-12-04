@@ -138,7 +138,8 @@ export const getArtistData = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         if (ctx.auth.userId) {
-          const QuizTypes = [albumSong, artistAlbum, artistYear, albumYear, studioAlbumCount, albumOpeningSong, whoWasInstrumentist];
+          // const QuizTypes = [albumSong, artistAlbum, artistYear, albumYear, studioAlbumCount, albumOpeningSong, whoWasInstrumentist];
+          const QuizTypes = [artistAlbum]
           const userID = ctx.auth.userId;
           const artistID = +input;
 
