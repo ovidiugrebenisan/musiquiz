@@ -74,7 +74,7 @@ export async function getAlbumReleaseYear(album: number): Promise<number> {
   }, `Failed to get release year for album ${album}`);
 }
 
-export async function getArtistGenre(artistID: number): Promise<number> {
+export async function getArtistTag(artistID: number): Promise<number> {
   return handleDatabaseQuery(async () => {
     const artistGenre = await mbdb.artist_tag.findFirst({
       where: { artist: artistID },

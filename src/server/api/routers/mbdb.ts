@@ -14,6 +14,7 @@ import {
   studioAlbumCount,
   albumOpeningSong,
   whoWasInstrumentist,
+  whatInstrumentPlayed,
 } from "~/server/lib/ArtistQuiz/functions";
 import {
   checkArtistQuizAnswer,
@@ -138,7 +139,16 @@ export const getArtistData = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         if (ctx.auth.userId) {
-          const QuizTypes = [albumSong, artistAlbum, artistYear, albumYear, studioAlbumCount, albumOpeningSong, whoWasInstrumentist];
+          const QuizTypes = [
+            albumSong,
+            artistAlbum,
+            artistYear,
+            albumYear,
+            studioAlbumCount,
+            albumOpeningSong,
+            whoWasInstrumentist,
+            whatInstrumentPlayed,
+          ];
 
           const userID = ctx.auth.userId;
           const artistID = +input;
@@ -156,12 +166,11 @@ export const getArtistData = createTRPCRouter({
           for (const quizType of QuizTypes) {
             const quiz = await quizType(artistID);
             if (quiz === null) {
-              continue
+              continue;
             }
             await pushArtistQuiz(userID, quiz);
-            
           }
-          const quizID = await getNextArtistQuizID(userID)
+          const quizID = await getNextArtistQuizID(userID);
           await setArtistQuizAsSendable(quizID!);
 
           return true;
@@ -171,22 +180,19 @@ export const getArtistData = createTRPCRouter({
         throw new Error("An error occured while constructing the quiz.");
       }
     }),
-    getArtistQuiz: publicProcedure
-    .input(z.number())
-    .query(async ({ctx}) => {
-      return await getArtistQuiz(ctx.auth.userId!)
-    }),
-    getArtistQuizAnswer: publicProcedure
+  getArtistQuiz: publicProcedure.input(z.number()).query(async ({ ctx }) => {
+    return await getArtistQuiz(ctx.auth.userId!);
+  }),
+  getArtistQuizAnswer: publicProcedure
     .input(z.string())
-    .query(async ({ctx, input}) => {
-      const answer = await checkArtistQuizAnswer(ctx.auth.userId!, input)
-      await deleteArtistQuiz(ctx.auth.userId!)
-      const quizID = await getNextArtistQuizID(ctx.auth.userId!)
+    .query(async ({ ctx, input }) => {
+      const answer = await checkArtistQuizAnswer(ctx.auth.userId!, input);
+      await deleteArtistQuiz(ctx.auth.userId!);
+      const quizID = await getNextArtistQuizID(ctx.auth.userId!);
       if (quizID) {
-        await setArtistQuizAsSendable(quizID)
-      }     
+        await setArtistQuizAsSendable(quizID);
+      }
 
-      return answer
-    })
-
+      return answer;
+    }),
 });
