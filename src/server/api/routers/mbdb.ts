@@ -6,16 +6,8 @@ import {
   getArtistBackgroundImageURL,
   getArtistLogo,
 } from "~/server/lib/SearchResults/functions";
-import {
-  artistAlbum,
-  albumSong,
-  albumYear,
-  artistYear,
-  studioAlbumCount,
-  albumOpeningSong,
-  whoWasInstrumentist,
-  whatInstrumentPlayed,
-} from "~/server/lib/ArtistQuiz/functions";
+
+import * as Questions from "~/server/lib/ArtistQuiz/Questions"
 import {
   checkArtistQuizAnswer,
   checkUserExists,
@@ -140,14 +132,14 @@ export const getArtistData = createTRPCRouter({
       try {
         if (ctx.auth.userId) {
           const QuizTypes = [
-            albumSong,
-            artistAlbum,
-            artistYear,
-            albumYear,
-            studioAlbumCount,
-            albumOpeningSong,
-            whoWasInstrumentist,
-            whatInstrumentPlayed,
+            Questions.albumSong,
+            Questions.artistAlbum,
+            Questions.artistYear,
+            Questions.albumYear,
+            Questions.studioAlbumCount,
+            Questions.albumOpeningSong,
+            Questions.whoWasInstrumentist,
+            Questions.whatInstrumentPlayed,
           ];
 
           const userID = ctx.auth.userId;

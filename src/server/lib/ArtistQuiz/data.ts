@@ -1,6 +1,6 @@
 import { mbdb } from "~/server/db/mbdb";
 import { mqdb } from "~/server/db/mqdb";
-import type { ArtistQuizFrontend, ArtistQuizType } from "./definitions";
+import type { ArtistQuizFrontend, ArtistQuizType, LinkData } from "./definitions";
 
 async function handleDatabaseQuery<T>(
   queryFunction: () => Promise<T>,
@@ -17,9 +17,7 @@ async function handleDatabaseQuery<T>(
   }
 }
 
-export async function getArtistStudioAlbums(
-  artistID: number,
-): Promise<number[]> {
+export async function getArtistAlbums(artistID: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
     const artistAlbums = await mbdb.release_group.findMany({
       where: { artist_credit: artistID, type: 1 },
@@ -29,23 +27,32 @@ export async function getArtistStudioAlbums(
   }, `Failed to get studio albums for artist ${artistID}`);
 }
 
-export async function getStudioAlbumsNoSec(
-  albums: number[],
-): Promise<number[]> {
+export async function getArtistAlbumNoSecType(
+  releaseGroup: number,
+): Promise<number | null> {
   return handleDatabaseQuery(async () => {
-    const filteredAlbums = (
-      await Promise.all(
-        albums.map(async (album) => {
-          const isNotStudio =
-            await mbdb.release_group_secondary_type_join.findFirst({
-              where: { release_group: album },
-            });
-          return isNotStudio ? null : album;
-        }),
-      )
-    ).filter((album): album is number => album !== null);
-    return filteredAlbums;
-  }, `Failed to filter studio albums`);
+    const studioAlbum = await mbdb.release_group_secondary_type_join.findFirst({
+      where: {
+        release_group: releaseGroup,
+      },
+      select: {
+        secondary_type: true,
+      },
+    });
+    return studioAlbum ? studioAlbum.secondary_type : studioAlbum;
+  }, "Could not fetch release group secondary type");
+}
+
+export async function isAlbumOfficial(releaseGroup: number): Promise<boolean> {
+  return handleDatabaseQuery(async () => {
+    const releases = await mbdb.release.findMany({
+      where: {
+        release_group: releaseGroup,
+        status: 1,
+      },
+    });
+    return releases.length > 0 ? true : false;
+  }, "Could not get release status");
 }
 
 export async function getArtistStartYear(artistID: number): Promise<number> {
@@ -114,19 +121,6 @@ export async function getAlbumsbyYear(year: number): Promise<number[]> {
   }, `Failed to get albums from year ${year}`);
 }
 
-export async function getAlbumsNames(albums: number[]): Promise<string[]> {
-  return handleDatabaseQuery(async () => {
-    const albumNames = await Promise.all(
-      albums.map(async (album) => {
-        const name = await getAlbumName(album);
-        if (!name) throw new Error("One of the albums does not have a name");
-        return name;
-      }),
-    );
-    return albumNames;
-  }, "Failed to get names for albums");
-}
-
 export async function getAlbumName(album: number): Promise<string> {
   return handleDatabaseQuery(async () => {
     const albumName = await mbdb.release_group.findFirst({
@@ -176,47 +170,6 @@ export async function getTrackIDsByMedium(mediumID: number): Promise<number[]> {
   }, `Failed to get track IDs for medium ${mediumID}`);
 }
 
-export async function getReleaseIDS(
-  release_groups: number[],
-): Promise<number[]> {
-  return handleDatabaseQuery(async () => {
-    const releaseIDS = await Promise.all(
-      release_groups.map(async (releaseGroup) => {
-        const release_id = await getReleaseId(releaseGroup);
-        return release_id;
-      }),
-    );
-    return releaseIDS;
-  }, "Failed to get release IDs");
-}
-
-export async function getMediumsbyReleaseIDs(
-  releases: number[],
-): Promise<number[]> {
-  return handleDatabaseQuery(async () => {
-    const mediums = await Promise.all(
-      releases.map(async (release) => {
-        const medium = await getMediumId(release);
-        return medium;
-      }),
-    );
-    return mediums;
-  }, "Failed to get mediums by release IDs");
-}
-
-export async function getTracksbyMediumIDS(
-  mediums: number[],
-): Promise<number[]> {
-  return handleDatabaseQuery(async () => {
-    const trackIDS = await Promise.all(
-      mediums.map(async (medium) => {
-        return await getTrackIDsByMedium(medium);
-      }),
-    );
-    return trackIDS.flat();
-  }, "Failed to get tracks by medium IDs");
-}
-
 export async function getTrackNamebyID(track: number): Promise<string> {
   return handleDatabaseQuery(async () => {
     const trackName = await mbdb.track.findFirst({
@@ -228,18 +181,6 @@ export async function getTrackNamebyID(track: number): Promise<string> {
     }
     return trackName.name;
   }, `Failed to get name for track ${track}`);
-}
-
-export async function getTrackNamesbyIDS(tracks: number[]): Promise<string[]> {
-  return handleDatabaseQuery(async () => {
-    const trackNames = await Promise.all(
-      tracks.map(async (track) => {
-        const name = await getTrackNamebyID(track);
-        return name;
-      }),
-    );
-    return trackNames;
-  }, "Failed to get track names by IDs");
 }
 
 export async function pushArtistQuiz(
@@ -294,25 +235,6 @@ export async function getArtistName(artistID: number): Promise<string> {
     });
     return quiz_type?.name as string;
   }, "Could not fetch artist's name");
-}
-
-export async function getArtistNames(artistIDs: number[]): Promise<string[]> {
-  return handleDatabaseQuery(async () => {
-    const names = (await Promise.all(
-      artistIDs.map(async (id) => {
-        const name = await mbdb.artist.findFirst({
-          where: {
-            id: id
-          },
-          select: {
-            name: true
-          }
-        })
-        return name!.name
-      })
-    ))
-    return names
-  }, "Could not fetch names")
 }
 
 export async function setArtistQuizAsSendable(quizID: number): Promise<void> {
@@ -472,7 +394,7 @@ export function getTrackNamesandPositionForMedium(
 
 export function getartistArtistLinks(
   artistID: number,
-): Promise<{id: number, link: number, entity0: number}[]> {
+): Promise<{ id: number; link: number; entity0: number }[]> {
   return handleDatabaseQuery(async () => {
     const links = await mbdb.l_artist_artist.findMany({
       where: {
@@ -481,84 +403,71 @@ export function getartistArtistLinks(
       select: {
         id: true,
         link: true,
-        entity0: true
+        entity0: true,
       },
     });
 
     return links;
   }, "Could not fetch links");
 }
-export async function getLinksData(
-  linkIDs: number[],
-): Promise<{
-  id: number,
-  ended: boolean;
-  begin_date_year: number | null;
-  end_date_year: number | null;
-  attribute_count: number;
-}[]> {
-  return handleDatabaseQuery(async () => {
-    const links = (await Promise.all(
-      linkIDs.map(async (link) => {
-        const linkdata = await mbdb.link.findFirst({
-          where: {
-            id: link
-          },
-          select: {
-            id: true,
-            begin_date_year: true,
-            end_date_year: true,
-            ended: true,
-            attribute_count: true
-          }
-        })
-        return linkdata!
-      })
-    ))
-    return links
-  }, "Could not fetch link data")
-}
-
 
 export async function getLinkAttributes(linkID: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
     const linkTypes = await mbdb.link_attribute.findMany({
       where: {
-        link: linkID
+        link: linkID,
       },
       select: {
-        attribute_type: true
-      }
-    })
-    return linkTypes.map(link => link.attribute_type)
-  }, "Could not get attribute types")
+        attribute_type: true,
+      },
+    });
+    return linkTypes.map((link) => link.attribute_type);
+  }, "Could not get attribute types");
 }
 
 export async function getAttributeName(attrID: number): Promise<string> {
   return handleDatabaseQuery(async () => {
     const name = await mbdb.link_attribute_type.findFirst({
       where: {
-        id: attrID
+        id: attrID,
       },
       select: {
-        name: true
-      }
-    })
-    return name!.name
-  }, "Could not fetch attribute name")
+        name: true,
+      },
+    });
+    return name!.name;
+  }, "Could not fetch attribute name");
 }
 
 export async function getArtistIDFromLink(linkID: number): Promise<number> {
   return handleDatabaseQuery(async () => {
     const artistID = await mbdb.l_artist_artist.findFirst({
       where: {
-        link: linkID
+        link: linkID,
       },
       select: {
-        entity0: true
-      }
-    })
-    return artistID!.entity0
-  }, "Could not fetch artist ID")
+        entity0: true,
+      },
+    });
+    return artistID!.entity0;
+  }, "Could not fetch artist ID");
 }
 
+
+export async function getLinkData(linkID: number): Promise<LinkData> {
+  return handleDatabaseQuery(async () => {
+    const link =  await mbdb.link.findFirst({
+      where: {
+        id: linkID
+      },
+      select: {
+        id: true,
+        begin_date_year: true,
+        end_date_year: true,
+        ended: true,
+        attribute_count: true
+      }
+    })
+    return link!
+  },"Could not fetch link data")
+}
