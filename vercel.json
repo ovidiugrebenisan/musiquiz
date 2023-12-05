@@ -1,6 +1,6 @@
 {
     "functions": {
-        "api/trpc/*": {
+        "api/trpc/*.ts": {
             "runtime": "edge@7.10.1"
         }
     }
