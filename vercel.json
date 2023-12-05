@@ -1,7 +1,7 @@
 {
     "functions": {
         "api/*": {
-            "runtime": "edge@latest"
+            "runtime": "edge@7.10.1"
         }
     }
 }
