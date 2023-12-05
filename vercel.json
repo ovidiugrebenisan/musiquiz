@@ -1,5 +1,7 @@
 {
-    "functions" : {
-        "runtime" : "edge"
+    "functions": {
+        "api/*": {
+            "runtime": "edge"
+        }
     }
 }
