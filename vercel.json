@@ -1,6 +1,6 @@
 {
     "functions": {
-        "api/**/*": {
+        "pages/api/**/*": {
             "runtime": "edge@7.10.1"
         }
     }
