@@ -35,12 +35,12 @@ import type { ArtistQuizType } from "./definitions";
 
 export async function artistYear(artistID: number): Promise<ArtistQuizType> {
   const artistStartYear = await getArtistStartYear(artistID);
-  const currentYear = new Date().getFullYear()
-  const maxYear = Math.min(currentYear - artistStartYear, 5)
+  const currentYear = new Date().getFullYear();
+  const maxYear = Math.min(currentYear - artistStartYear, 5);
   const answers = generateAnswerswhichYear(
     artistStartYear,
     artistStartYear - 5,
-    artistStartYear + maxYear
+    artistStartYear + maxYear,
   );
   const shuffledArray = shuffleArray(answers);
   const answersStrings = shuffledArray.map((answer) => answer.toString());
@@ -131,11 +131,11 @@ export async function albumYear(artistID: number): Promise<ArtistQuizType> {
   const chosenAlbumName = await getAlbumName(chosenAlbum);
   const chosenAlbumYear = await getAlbumReleaseYear(chosenAlbum);
   const currentYear = new Date().getFullYear();
-  const maxYear = Math.min(currentYear - chosenAlbumYear, 5)
+  const maxYear = Math.min(currentYear - chosenAlbumYear, 5);
   const answers = generateAnswerswhichYear(
     chosenAlbumYear,
     chosenAlbumYear - 5,
-    chosenAlbumYear + maxYear
+    chosenAlbumYear + maxYear,
   );
   const shuffledAnswers = shuffleArray(answers);
   const stringAnswers = shuffledAnswers.map((answer) => answer.toString());
@@ -155,9 +155,13 @@ export async function studioAlbumCount(
   const artistName = await getArtistName(artistID);
   const artistStudioAlbumsCount = (await getStudioAlbumsNoSec(artistAlbums))
     .length;
-  const minCount = Math.max(artistStudioAlbumsCount -5, 1)
+  const minCount = Math.max(artistStudioAlbumsCount - 5, 1);
   const answers = shuffleArray(
-    generateAnswerswhichYear(artistStudioAlbumsCount, minCount, artistStudioAlbumsCount + 5),
+    generateAnswerswhichYear(
+      artistStudioAlbumsCount,
+      minCount,
+      artistStudioAlbumsCount + 5,
+    ),
   ).map((answer) => answer.toString());
   const question = `How many studio albums does ${artistName} have?`;
   const correct_answer = artistStudioAlbumsCount.toString();
@@ -200,7 +204,7 @@ export async function albumOpeningSong(
   answers.push(correct_answer);
   while (answers.length < 4) {
     const randomIndex = randomNumber(tracks.length);
-    const track = tracks[randomIndex] 
+    const track = tracks[randomIndex];
     answers.push(track!.name);
     tracks.splice(randomIndex, 1);
   }
@@ -215,134 +219,158 @@ export async function albumOpeningSong(
 
 type LinkData = {
   id: number;
-  begin_date_year: number | null
-  end_date_year: number | null
+  begin_date_year: number | null;
+  end_date_year: number | null;
   attribute_count: number;
-  ended: boolean
-}
+  ended: boolean;
+};
 
-export async function whoWasInstrumentist(artistID: number ): Promise<ArtistQuizType | null> {
-  const artistType = await getArtistType(artistID)
+export async function whoWasInstrumentist(
+  artistID: number,
+): Promise<ArtistQuizType | null> {
+  const artistType = await getArtistType(artistID);
   if (artistType === 1) {
-    return null
+    return null;
   }
 
-  const relationships = await getartistArtistLinks(artistID)
+  const relationships = await getartistArtistLinks(artistID);
 
   if (relationships.length < 4) {
-    return null
+    return null;
   }
-  const linkIds = relationships.map(linkID => linkID.link)
-  const linksData = await getLinksData(linkIds)
-  const filteredData = linksData.filter(link => link.attribute_count > 0 && link.begin_date_year)
+  const linkIds = relationships.map((linkID) => linkID.link);
+  const linksData = await getLinksData(linkIds);
+  const filteredData = linksData.filter(
+    (link) => link.attribute_count > 0 && link.begin_date_year,
+  );
   if (filteredData.length < 4) {
-    return null
+    return null;
   }
-  const artistName = await getArtistName(artistID)
-  const chosenLink = filteredData[randomNumber(filteredData.length)] as LinkData
-  const chosenLinkAttrs = await getLinkAttributes(chosenLink.id)
-  const chosenAttr = chosenLinkAttrs[randomNumber(chosenLinkAttrs.length)] as number
+  const artistName = await getArtistName(artistID);
+  const chosenLink = filteredData[
+    randomNumber(filteredData.length)
+  ] as LinkData;
+  const chosenLinkAttrs = await getLinkAttributes(chosenLink.id);
+  const chosenAttr = chosenLinkAttrs[
+    randomNumber(chosenLinkAttrs.length)
+  ] as number;
 
-  const chosenAttrName = await getAttributeName(chosenAttr)
-  const removeDuplicates = (await Promise.all(
-    filteredData.map(async (link) => {
-      return {
-        link,
-        attrs: await getLinkAttributes(link.id)
-      };
-    })
-  )).filter(item => !item.attrs.includes(chosenAttr))
-    .map(item => item.link);
-  
+  const chosenAttrName = await getAttributeName(chosenAttr);
+  const removeDuplicates = (
+    await Promise.all(
+      filteredData.map(async (link) => {
+        return {
+          link,
+          attrs: await getLinkAttributes(link.id),
+        };
+      }),
+    )
+  )
+    .filter((item) => !item.attrs.includes(chosenAttr))
+    .map((item) => item.link);
+
   if (removeDuplicates.length < 4) {
-    return null
+    return null;
   }
-  const chosenArtistID = relationships.filter(rel => rel.link === chosenLink.id)[0]!.entity0
-  const correct_answer = await getArtistName(chosenArtistID)
-  const startYear = chosenLink.begin_date_year
-  const endYear = chosenLink.ended === false ? "current times" : chosenLink.end_date_year
+  const chosenArtistID = relationships.filter(
+    (rel) => rel.link === chosenLink.id,
+  )[0]!.entity0;
+  const correct_answer = await getArtistName(chosenArtistID);
+  const startYear = chosenLink.begin_date_year;
+  const endYear =
+    chosenLink.ended === false ? "current times" : chosenLink.end_date_year;
 
-  const otherNamesIDsfiltered = removeDuplicates.filter(name => name !== chosenLink).map(id => id.id)
-  shuffleArray(otherNamesIDsfiltered)
-  const others = otherNamesIDsfiltered.slice(0, 3)
+  const otherNamesIDsfiltered = removeDuplicates
+    .filter((name) => name !== chosenLink)
+    .map((id) => id.id);
+  shuffleArray(otherNamesIDsfiltered);
+  const others = otherNamesIDsfiltered.slice(0, 3);
 
-  const otherArtistIds = relationships.filter(id => others.includes(id.link) ).map(id => id.entity0)
+  const otherArtistIds = relationships
+    .filter((id) => others.includes(id.link))
+    .map((id) => id.entity0);
 
-  const otherArtistNames = await getArtistNames(otherArtistIds)
+  const otherArtistNames = await getArtistNames(otherArtistIds);
 
-  let question = ""
-  const answers = [...otherArtistNames, correct_answer]
-  question = chosenAttrName === "original" ? `Who was a founding member of ${artistName}?` : `Who played the role of ${chosenAttrName} for ${artistName} from ${startYear} to ${endYear} ?`
+  let question = "";
+  const answers = [...otherArtistNames, correct_answer];
+  question =
+    chosenAttrName === "original"
+      ? `Who was a founding member of ${artistName}?`
+      : `Who played the role of ${chosenAttrName} for ${artistName} from ${startYear} to ${endYear} ?`;
 
   return {
     question,
     correct_answer,
-    answers
-  }
+    answers,
+  };
 }
 
-export async function whatInstrumentPlayed(artistID: number): Promise<ArtistQuizType | null> {
-  const artistType = await getArtistType(artistID)
+export async function whatInstrumentPlayed(
+  artistID: number,
+): Promise<ArtistQuizType | null> {
+  const artistType = await getArtistType(artistID);
   if (artistType === 1) {
-    return null
+    return null;
   }
 
-  const relationships = await getartistArtistLinks(artistID)
+  const relationships = await getartistArtistLinks(artistID);
   if (relationships.length === 0) {
-    return null
+    return null;
   }
 
-  const linkIds = relationships.map(linkID => linkID.link)
-  const linksData = await getLinksData(linkIds)
-  const filteredData = linksData.filter(link => link.attribute_count > 0 )
+  const linkIds = relationships.map((linkID) => linkID.link);
+  const linksData = await getLinksData(linkIds);
+  const filteredData = linksData.filter((link) => link.attribute_count > 0);
   if (filteredData.length === 0) {
-    return null
+    return null;
   }
-  const bandName = await getArtistName(artistID)
-  const chosenLink = filteredData[randomNumber(filteredData.length)] as LinkData
-  const chosenLinkAttrs = await getLinkAttributes(chosenLink.id)
-  const chosenLinkAttrNames = (await Promise.all(
-    chosenLinkAttrs.map(async (attr) => {
-      const attrName = await getAttributeName(attr)
-      return attrName
-    })
-  )).filter(item => item !== 'original')
-  const chosenAttr = chosenLinkAttrNames[randomNumber(chosenLinkAttrNames.length)] as string
+  const bandName = await getArtistName(artistID);
+  const chosenLink = filteredData[
+    randomNumber(filteredData.length)
+  ] as LinkData;
+  const chosenLinkAttrs = await getLinkAttributes(chosenLink.id);
+  const chosenLinkAttrNames = (
+    await Promise.all(
+      chosenLinkAttrs.map(async (attr) => {
+        const attrName = await getAttributeName(attr);
+        return attrName;
+      }),
+    )
+  ).filter((item) => item !== "original");
+  const chosenAttr = chosenLinkAttrNames[
+    randomNumber(chosenLinkAttrNames.length)
+  ] as string;
 
-
-
-
-  const otherAttrIDs = (await Promise.all(
+  const otherAttrIDs = await Promise.all(
     filteredData.map(async (id) => {
-      const attrid = await getLinkAttributes(id.id)
-      return attrid
-    })
-  ))
+      const attrid = await getLinkAttributes(id.id);
+      return attrid;
+    }),
+  );
 
-  const flattenedUniqueOptions = [...new Set(otherAttrIDs.flat())]
-  const removeDuplicates = (await Promise.all(
-    flattenedUniqueOptions.map(async (link) => {
-      const attr = await getAttributeName(link);
-      return attr;
-    })
-  )).filter(attr => attr !== chosenAttr && attr !== 'original');
-  console.log(removeDuplicates)
-  console.log(chosenAttr)
-  shuffleArray(removeDuplicates)
-  const options = removeDuplicates.slice(0, 3)
-  const answers = [...options, chosenAttr]
-  const chosenArtistID = relationships.filter(rel => rel.link === chosenLink.id)[0]!.entity0
-  const artistName = await getArtistName(chosenArtistID)
+  const flattenedUniqueOptions = [...new Set(otherAttrIDs.flat())];
+  const removeDuplicates = (
+    await Promise.all(
+      flattenedUniqueOptions.map(async (link) => {
+        const attr = await getAttributeName(link);
+        return attr;
+      }),
+    )
+  ).filter((attr) => attr !== chosenAttr && attr !== "original");
+  shuffleArray(removeDuplicates);
+  const options = removeDuplicates.slice(0, 3);
+  const answers = [...options, chosenAttr];
+  const chosenArtistID = relationships.filter(
+    (rel) => rel.link === chosenLink.id,
+  )[0]!.entity0;
+  const artistName = await getArtistName(chosenArtistID);
 
-  const question = `What role did ${artistName} have during his time in ${bandName}?`
+  const question = `What role did ${artistName} have during his time in ${bandName}?`;
 
   return {
     question,
     answers,
-    correct_answer: chosenAttr
-  }
-
-
-
-
+    correct_answer: chosenAttr,
+  };
 }
