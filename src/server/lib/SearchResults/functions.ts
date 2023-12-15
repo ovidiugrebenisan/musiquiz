@@ -1,6 +1,7 @@
 import axios from "axios"
 import { randomNumber } from "~/utils/helper_functions";
-import type { MusicResponse } from "./definitions";
+import type { MusicResponse } from "../definitions";
+
 
 export async function getArtistBackgroundImageURL(artistMBID: string): Promise<string | null> {
     try {
@@ -12,8 +13,8 @@ export async function getArtistBackgroundImageURL(artistMBID: string): Promise<s
         if (response.data.artistbackground) {
             // Example: Return the URL of the first background image
             const upperLimit = response.data.artistbackground.length
-            const randomPicture = response.data.artistbackground[randomNumber(upperLimit)]?.url
-            return randomPicture!
+            const randomPicture = response.data.artistbackground[randomNumber(upperLimit)]?.url as string
+            return randomPicture
         } else {
             console.log("No artist background found");
             return null;

@@ -1,13 +1,10 @@
 import {
-  getArtistTag,
-  countAlbumsByTag,
-  getAlbumByIndex,
   getAlbumName,
   getArtistName,
 } from "../data";
-import { randomNumber, shuffleArray } from "~/utils/helper_functions";
+import { randomNumber } from "~/utils/helper_functions";
 import type { ArtistQuizType } from "../definitions";
-import { getOfficialAlbums } from "../functions";
+import { getOfficialAlbums, randomArtistAlbums } from "../functions";
 
 export async function artistAlbum(
   artistID: number,
@@ -19,35 +16,11 @@ export async function artistAlbum(
     randomNumber(officialAlbums.length)
   ] as number;
 
-  const artistGenre = await getArtistTag(artistID);
+  const answers = await randomArtistAlbums(artistID, chosenAlbum)
 
-  const otherAlbumsCount = await countAlbumsByTag(artistGenre);
-
-  if (otherAlbumsCount < 4) {
-    return null;
+  if (!answers) {
+    return null
   }
-
-  const randomAlbums: number[] = [];
-
-  while (randomAlbums.length < 3) {
-    const randomIndex = randomNumber(otherAlbumsCount);
-
-    const album = await getAlbumByIndex(randomIndex, artistGenre);
-    if (album === chosenAlbum || randomAlbums.includes(album)) {
-      continue;
-    }
-    randomAlbums.push(album);
-  }
-
-  randomAlbums.push(chosenAlbum);
-
-  shuffleArray(randomAlbums);
-
-  const finalAlbums = await Promise.all(
-    randomAlbums.map(async (album) => {
-      return await getAlbumName(album);
-    }),
-  );
 
   const chosenAlbumName = await getAlbumName(chosenAlbum);
 
@@ -57,7 +30,7 @@ export async function artistAlbum(
 
   return {
     question,
-    answers: finalAlbums,
+    answers,
     correct_answer: chosenAlbumName,
   };
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { getArtistGID } from "~/server/lib/data";
 
 import * as countries from "i18n-iso-countries";
 import {
@@ -7,7 +8,7 @@ import {
   getArtistLogo,
 } from "~/server/lib/SearchResults/functions";
 
-import * as Questions from "~/server/lib/ArtistQuiz/Questions"
+import * as Questions from "~/server/lib/ArtistQuiz/Questions";
 import {
   checkArtistQuizAnswer,
   checkUserExists,
@@ -44,22 +45,14 @@ export const getArtistData = createTRPCRouter({
 
   getArtistLogo: publicProcedure
     .input(z.string())
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input }) => {
       const artistID = Number(input);
-      const artistGID = await ctx.mbdb.artist.findFirst({
-        where: {
-          id: artistID,
-        },
-        select: {
-          gid: true,
-        },
-      });
-      if (artistGID?.gid) {
-        const artistLogo = await getArtistLogo(artistGID.gid);
-        if (artistLogo) {
-          return artistLogo;
-        }
+      const artistGID = await getArtistGID(artistID);
+      const artistLogo = await getArtistLogo(artistGID);
+      if (artistLogo) {
+        return artistLogo;
       }
+
       return null;
     }),
 

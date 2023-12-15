@@ -1,21 +1,8 @@
 import { mbdb } from "~/server/db/mbdb";
 import { mqdb } from "~/server/db/mqdb";
 import type { ArtistQuizFrontend, ArtistQuizType, LinkData } from "./definitions";
+import { handleDatabaseQuery } from "../functions";
 
-async function handleDatabaseQuery<T>(
-  queryFunction: () => Promise<T>,
-  errorMessage: string,
-): Promise<T> {
-  try {
-    return await queryFunction();
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      throw new Error(`${errorMessage}: ${error.message}`);
-    } else {
-      throw new Error(errorMessage);
-    }
-  }
-}
 
 export async function getArtistAlbums(artistID: number): Promise<number[]> {
   return handleDatabaseQuery(async () => {
@@ -470,4 +457,33 @@ export async function getLinkData(linkID: number): Promise<LinkData> {
     })
     return link!
   },"Could not fetch link data")
+}
+
+export async function getAlbumNameByGid(gid: string): Promise<string> {
+  return handleDatabaseQuery(async () => {
+    const albumName = await mbdb.release_group.findFirst({
+      where: {
+        gid: gid
+      },
+      select: {
+        name: true
+      }
+    })
+
+    return albumName!.name
+  }, "Could not get album name by gid")
+}
+
+export async function getAlbumIDByGID(album: string): Promise<number> {
+  return handleDatabaseQuery(async () => {
+    const albumID = await mbdb.release_group.findFirst({
+      where: {
+        gid: album
+      },
+      select: {
+        id: true
+      }
+    })
+    return albumID!.id
+  }, "Could not get album GID")
 }
