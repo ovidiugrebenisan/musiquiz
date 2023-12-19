@@ -27,7 +27,8 @@ export const getArtistData = createTRPCRouter({
       const artist = await ctx.mbdb.artist.findMany({
         where: {
           name: {
-            startsWith: input,
+            contains: input,
+            mode: 'insensitive'
           },
         },
         select: {

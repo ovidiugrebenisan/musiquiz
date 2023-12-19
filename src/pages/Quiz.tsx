@@ -34,7 +34,7 @@ export default function Quiz() {
     } else if (quizData.data === null && nextQuiz !== 0) {
       void router.push("/Search")
     }
-  }, [quizData.data]);
+  }, [quizData.isSuccess]);
 
 
   const artistLogo = api.mbdb.getArtistLogo.useQuery(artistID as string, {
