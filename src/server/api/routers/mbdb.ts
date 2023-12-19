@@ -25,7 +25,7 @@ export const getArtistData = createTRPCRouter({
     .input(z.string())
     .query(async ({ ctx, input }) => {
       const artistName = input.toLocaleLowerCase()
-      const artist = await ctx.mbdb.$queryRaw`
+      const artist = await ctx.mbdb.$queryRaw<{name: string}[]>`
       SELECT * FROM musicbrainz.artist
       WHERE lower(name) LIKE '%' || ${artistName} || '%'
       LIMIT 5;
