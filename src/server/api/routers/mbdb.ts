@@ -24,19 +24,12 @@ export const getArtistData = createTRPCRouter({
   getAllArtists: publicProcedure
     .input(z.string())
     .query(async ({ ctx, input }) => {
-      const artist = await ctx.mbdb.artist.findMany({
-        where: {
-          name: {
-            contains: input,
-            mode: 'insensitive'
-          },
-        },
-        select: {
-          name: true,
-        },
-        distinct: ["name"],
-        take: 5,
-      });
+      const artistName = input.toLocaleLowerCase()
+      const artist = await ctx.mbdb.$queryRaw`
+      SELECT * FROM musicbrainz.artist
+      WHERE lower(name) LIKE '%' || ${artistName} || '%'
+      LIMIT 5;
+      `;
       if (artist) {
         return artist;
       }
