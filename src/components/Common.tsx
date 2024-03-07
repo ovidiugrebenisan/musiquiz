@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import React, { type ReactNode} from 'react'
-import Image from 'next/image'
 
 interface CommonProps {
     children: ReactNode
@@ -8,8 +7,7 @@ interface CommonProps {
 
 export  function Common({children}: CommonProps) {
 return (
-    <div className="relative h-screen w-screen">
-    <Image src="/bg.png" alt="backgrond image" fill={true}></Image>
+    <div className="relative h-screen w-screen bg-black">
       <Link
         href="/"
         className="absolute left-[100px] top-[80px]

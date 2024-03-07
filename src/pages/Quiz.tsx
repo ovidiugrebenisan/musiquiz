@@ -62,7 +62,7 @@ export default function Quiz() {
 
   return (
     <>
-      <Image src="/paper.png" alt="background image" fill={true} />
+      <Image src="/quiz_bg.png" alt="background image" fill={true} />
       <div className="fixed  right-[9.8vw] top-[30.75vh] h-[42.18vh] w-[27.43vw] origin-center rotate-[7.45deg] bg-white">
         <div className="relative ">
           <div className="absolute left-1/2 top-0 h-[12.91vw] w-[12.91vw] origin-center -translate-x-1/2 -translate-y-1/2 rotate-[5.75deg] transform">

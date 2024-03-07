@@ -8,7 +8,7 @@ type Props = {
   disabled: boolean;
   set_disabled: React.Dispatch<React.SetStateAction<boolean>>;
   next_quiz: React.Dispatch<React.SetStateAction<number>>;
-  reset_button: number
+  reset_button: number;
 };
 
 export function TextAnswerButton({
